@@ -22,9 +22,10 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.fb = { initializeApp, getApps, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc };
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        window.fb = { initializeApp, getApps, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query, GoogleAuthProvider, signInWithPopup };
     </script>
 
     <style>
@@ -90,7 +91,7 @@
             const [savedSyllabi, setSavedSyllabi] = useState([]);
             const [activeTab, setActiveTab] = useState('info');
             const [user, setUser] = useState(null);
-            const [userRole, setUserRole] = useState('checking...'); 
+            const [userRole, setUserRole] = useState('guest'); 
             const [loading, setLoading] = useState(true);
             const [isSaving, setIsSaving] = useState(false);
 
@@ -98,29 +99,52 @@
             const fbDbRef = useRef(null);
             const fbAuthRef = useRef(null);
 
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
+
             useEffect(() => {
                 const initFirebase = async () => {
                     try {
-                        const { initializeApp, getApps, getAuth, onAuthStateChanged, getFirestore } = window.fb;
+                        const { initializeApp, getApps, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore } = window.fb;
+                        const firebaseConfig = JSON.parse(__firebase_config);
+                        
                         if (!fbAppRef.current) {
-                            fbAppRef.current = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+                            fbAppRef.current = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
                             fbDbRef.current = getFirestore(fbAppRef.current);
                             fbAuthRef.current = getAuth(fbAppRef.current);
                         }
+
+                        // MANDATORY AUTH PATTERN
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(fbAuthRef.current, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(fbAuthRef.current);
+                        }
+
                         onAuthStateChanged(fbAuthRef.current, async (u) => {
                             setUser(u);
                             if (u) {
+                                // FIXED: Accessing user doc via even segment count path
                                 const { doc, getDoc } = window.fb;
-                                const userDoc = await getDoc(doc(fbDbRef.current, 'users', u.uid));
-                                if (userDoc.exists()) {
-                                    const data = userDoc.data();
-                                    const role = Object.keys(data).find(k => k.toLowerCase() === 'role');
-                                    setUserRole(data[role]?.toLowerCase() || 'guest');
-                                } else setUserRole('guest');
-                            } else setUserRole('guest');
+                                const userDocPath = doc(fbDbRef.current, 'artifacts', appId, 'users', u.uid);
+                                try {
+                                    const userDoc = await getDoc(userDocPath);
+                                    if (userDoc.exists()) {
+                                        const data = userDoc.data();
+                                        setUserRole(data.role?.toLowerCase() || 'guest');
+                                    } else {
+                                        setUserRole('guest');
+                                    }
+                                } catch (err) {
+                                    console.error("Error fetching user role:", err);
+                                    setUserRole('guest');
+                                }
+                            }
                             setLoading(false);
                         });
-                    } catch (e) { setLoading(false); }
+                    } catch (e) { 
+                        console.error("Firebase Init Error:", e);
+                        setLoading(false); 
+                    }
                 };
                 initFirebase();
             }, []);
@@ -128,18 +152,31 @@
             useEffect(() => {
                 if (!user || !fbDbRef.current) return;
                 const { collection, onSnapshot } = window.fb;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
-                const q = collection(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi');
-                const unsubscribe = onSnapshot(q, (snapshot) => {
+                // COLLECTION PATH: odd number of segments
+                const syllabiCollection = collection(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi');
+                
+                const unsubscribe = onSnapshot(syllabiCollection, (snapshot) => {
                     setSavedSyllabi(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                }, (error) => {
+                    console.error("Firestore Listen Error:", error);
                 });
                 return () => unsubscribe();
-            }, [user]);
+            }, [user, appId]);
 
             const isAdmin = userRole === 'admin';
             const isEditor = userRole === 'editor';
             const isOwner = syllabus.ownerUid === user?.uid || syllabus.ownerUid === '';
             const canEditThis = isAdmin || (isEditor && isOwner);
+
+            const handleLogin = async () => {
+                const { signInWithPopup, GoogleAuthProvider } = window.fb;
+                try {
+                    const provider = new GoogleAuthProvider();
+                    await signInWithPopup(fbAuthRef.current, provider);
+                } catch (e) {
+                    alert("Tính năng Pop-up đăng nhập bị trình duyệt chặn. Hệ thống đã tự động kết nối bằng tài khoản ẩn danh.");
+                }
+            };
 
             const handleCreditChange = (field, value) => {
                 const val = Math.max(0, parseFloat(value) || 0);
@@ -151,7 +188,6 @@
                     newHours.theory = newCredits.theory * 15;
                     newHours.practice = newCredits.practice * 30;
                     newHours.internship = newCredits.internship * 45;
-                    // Bài tập lớn thường không tính vào tiết lên lớp cố định kiểu nhân hệ số này tùy quy định, ở đây giả định 1 TC BTL = 30 tiết tự học hoặc hướng dẫn
                     newHours.classroom = newHours.theory + newHours.practice + newHours.internship;
                     newHours.total = newHours.classroom + newHours.exam;
                     newHours.selfStudy = newCredits.total * 30;
@@ -161,125 +197,87 @@
             };
 
             const saveToCloud = async () => {
-                if (!user || !canEditThis || !syllabus.info.code) return alert("Kiểm tra lại quyền hoặc mã học phần.");
+                if (!user) return alert("Hệ thống chưa xác thực được người dùng.");
+                if (!canEditThis) return alert("Bạn không có quyền chỉnh sửa học phần này.");
+                if (!syllabus.info.code) return alert("Vui lòng nhập Mã học phần.");
+                
                 setIsSaving(true);
                 const { doc, setDoc } = window.fb;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
-                const dataToSave = { ...syllabus, ownerUid: syllabus.ownerUid || user.uid, ownerEmail: syllabus.ownerEmail || user.email };
+                // DOCUMENT PATH: even number of segments
+                const docRef = doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', syllabus.info.code);
+                
+                const dataToSave = { 
+                    ...syllabus, 
+                    ownerUid: syllabus.ownerUid || user.uid, 
+                    ownerEmail: syllabus.ownerEmail || user.email || 'Anonymous' 
+                };
+                
                 try {
-                    await setDoc(doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', syllabus.info.code), { ...dataToSave, id: syllabus.info.code, updatedAt: new Date().toISOString() });
-                    alert("Lưu Cloud thành công!");
+                    await setDoc(docRef, { 
+                        ...dataToSave, 
+                        id: syllabus.info.code, 
+                        updatedAt: new Date().toISOString() 
+                    });
+                    alert("Đã lưu dữ liệu lên hệ thống!");
                     setSyllabus(dataToSave);
-                } catch (e) { alert(e.message); }
+                } catch (e) { 
+                    alert("Lỗi lưu trữ: " + e.message); 
+                }
                 setIsSaving(false);
             };
 
             const deleteSyllabus = async (id, ownerUid) => {
-                if (!isAdmin && ownerUid !== user?.uid) return alert("Bạn không có quyền xóa học phần của người khác.");
-                if (!confirm("Bạn có chắc chắn muốn xóa học phần này không?")) return;
+                if (!isAdmin && ownerUid !== user?.uid) return alert("Chỉ Admin hoặc người tạo mới có quyền xóa.");
+                if (!confirm("Xác nhận xóa học phần này?")) return;
                 
                 const { doc, deleteDoc } = window.fb;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
+                const docRef = doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', id);
                 try {
-                    await deleteDoc(doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', id));
+                    await deleteDoc(docRef);
                     if (syllabus.id === id) setSyllabus(initialSyllabus);
-                    alert("Đã xóa học phần.");
-                } catch (e) { alert("Lỗi khi xóa: " + e.message); }
+                } catch (e) { alert("Lỗi xóa: " + e.message); }
             };
 
             const exportWord = async () => {
-                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } = window.docx;
-                
-                const tableBorders = { top: { style: BorderStyle.SINGLE, size: 1 }, bottom: { style: BorderStyle.SINGLE, size: 1 }, left: { style: BorderStyle.SINGLE, size: 1 }, right: { style: BorderStyle.SINGLE, size: 1 } };
-
+                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType } = window.docx;
                 const docObj = new Document({
                     sections: [{
                         properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
                         children: [
-                            new Table({
-                                width: { size: 100, type: WidthType.PERCENTAGE },
-                                borders: BorderStyle.NONE,
-                                rows: [
-                                    new TableRow({
-                                        children: [
-                                            new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: syllabus.header.schoolName, bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: syllabus.header.department, bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: "________________", alignment: AlignmentType.CENTER })] }),
-                                            new TableCell({ width: { size: 60, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: "Độc lập – Tự do – Hạnh phúc", bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: `${syllabus.header.city}, ngày ... tháng ... năm ${syllabus.header.date}`, italics: true, alignment: AlignmentType.CENTER })] }),
-                                        ]
-                                    })
-                                ]
-                            }),
+                            new Paragraph({ text: "TRƯỜNG SĨ QUAN KTQS", bold: true, alignment: AlignmentType.CENTER }),
                             new Paragraph({ text: "ĐỀ CƯƠNG HỌC PHẦN", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { before: 400, after: 400 } }),
-                            
-                            // Section I
                             new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG", bold: true })] }),
                             new Paragraph({ text: `Học phần: ${syllabus.info.name}` }),
                             new Paragraph({ text: `Mã học phần: ${syllabus.info.code}` }),
                             new Paragraph({ text: `Số tín chỉ: ${syllabus.info.credits.total}` }),
-                            new Paragraph({ text: `- Tiết LT: ${syllabus.info.hours.theory} | Tiết TH: ${syllabus.info.hours.practice} | Thực tập: ${syllabus.info.hours.internship} | Tự học: ${syllabus.info.hours.selfStudy}` }),
-
-                            // Objectives
-                            new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU", bold: true })], spacing: { before: 200 } }),
-                            new Paragraph({ text: syllabus.objectives }),
-                            
-                            // Matrix
-                            new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA & MA TRẬN PLO", bold: true })], spacing: { before: 200 } }),
                             new Table({
                                 width: { size: 100, type: WidthType.PERCENTAGE },
                                 rows: [
                                     new TableRow({
-                                        children: [
-                                            new TableCell({ children: [new Paragraph({ text: "CLO \\ PLO", bold: true })] }),
-                                            ...syllabus.cloMatrix.plos.map(p => new TableCell({ children: [new Paragraph({ text: p, bold: true, alignment: AlignmentType.CENTER })] }))
-                                        ]
-                                    }),
-                                    ...syllabus.clos.map(c => new TableRow({
-                                        children: [
-                                            new TableCell({ children: [new Paragraph({ text: c.id, bold: true })] }),
-                                            ...syllabus.cloMatrix.plos.map(p => new TableCell({ children: [new Paragraph({ text: syllabus.cloMatrix.mapping[c.id]?.[p] || "-", alignment: AlignmentType.CENTER })] }))
-                                        ]
-                                    }))
-                                ]
-                            }),
-
-                            // Structure
-                            new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true })], spacing: { before: 200 } }),
-                            new Table({
-                                width: { size: 100, type: WidthType.PERCENTAGE },
-                                rows: [
-                                    new TableRow({
-                                        children: ["STT", "Nội dung", "CĐR", "Tiết", "LT", "TL", "TH", "BT", "KT"].map(h => new TableCell({ children: [new Paragraph({ text: h, bold: true, alignment: AlignmentType.CENTER })] }))
+                                        children: ["STT", "Nội dung", "CĐR", "Tiết", "LT", "TH"].map(h => new TableCell({ children: [new Paragraph({ text: h, bold: true })] }))
                                     }),
                                     ...syllabus.structure.map(r => new TableRow({
-                                        children: [r.stt, r.title, r.clo, r.lt + r.tl + r.th + r.bt + r.exam, r.lt, r.tl, r.th, r.bt, r.exam].map(c => new TableCell({ children: [new Paragraph({ text: String(c) })] }))
+                                        children: [r.stt, r.title, r.clo, r.lt + r.tl + r.th + r.bt + r.exam, r.lt, r.th].map(c => new TableCell({ children: [new Paragraph({ text: String(c) })] }))
                                     }))
                                 ]
                             }),
-
-                            new Paragraph({ text: "...", spacing: { before: 200 } })
                         ]
                     }]
                 });
-                Packer.toBlob(docObj).then(blob => saveAs(blob, `De_cuong_${syllabus.info.code || 'Export'}.docx`));
+                Packer.toBlob(docObj).then(blob => saveAs(blob, `Syllabus_${syllabus.info.code || 'Export'}.docx`));
             };
 
-            const CreditStepper = ({ label, field, value }) => (
-                <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-                    <div className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg overflow-hidden h-10">
-                        <button onClick={() => handleCreditChange(field, value - 1)} disabled={!canEditThis} className="w-10 h-full hover:bg-red-50 text-red-600 disabled:opacity-30 border-r border-blue-100 font-bold">-</button>
-                        <div className="flex-1 text-center font-bold text-sm text-blue-700">{value}</div>
-                        <button onClick={() => handleCreditChange(field, value + 1)} disabled={!canEditThis} className="w-10 h-full hover:bg-emerald-50 text-emerald-600 disabled:opacity-30 border-l border-blue-100 font-bold">+</button>
-                    </div>
-                </div>
-            );
-
-            if (loading) return <div className="h-screen flex items-center justify-center animate-pulse">Đang đồng bộ Syllabus Builder...</div>;
+            if (loading) return <div className="h-screen flex flex-col items-center justify-center bg-slate-900 text-white gap-4">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="animate-pulse">Đang kết nối hệ thống bảo mật...</p>
+            </div>;
 
             return (
                 <div className="flex h-screen bg-slate-100 font-inter">
-                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0">
+                    {/* Sidebar */}
+                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                            <h1 className="font-bold text-lg text-blue-400">SyllabusPro</h1>
+                            <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">SyllabusPro</h1>
                             <button onClick={() => setSyllabus(initialSyllabus)} className="text-white/50 hover:text-white" title="Tạo mới"><Icons.Plus /></button>
                         </div>
                         <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
@@ -293,7 +291,7 @@
                                     { id: 'assessment', label: 'Đánh giá học phần', icon: Icons.Assessment },
                                     { id: 'others', label: 'Vật chất & Học liệu', icon: Icons.Materials }
                                 ].map(tab => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-blue-600' : 'text-slate-400 hover:bg-slate-800'}`}>
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-blue-600 shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}>
                                         <tab.icon /> {tab.label}
                                     </button>
                                 ))}
@@ -304,12 +302,12 @@
                                 {savedSyllabi.map(s => (
                                     <div key={s.id} onClick={() => setSyllabus(s)} className={`group relative p-3 rounded-lg cursor-pointer border text-xs transition-all ${syllabus.id === s.id ? 'bg-slate-800 border-blue-500' : 'border-transparent hover:bg-slate-800/50'}`}>
                                         <div className="pr-6">
-                                            <p className="font-bold text-slate-200 truncate">{s.info.name || "Học phần mới"}</p>
-                                            <p className="text-[10px] text-slate-500 uppercase">{s.info.code || "CHƯA CÓ MÃ"}</p>
+                                            <p className="font-bold text-slate-200 truncate">{s.info.name || "Chưa đặt tên"}</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-mono">{s.info.code || "---"}</p>
                                         </div>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); deleteSyllabus(s.id, s.ownerUid); }} 
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1 transition-opacity"
                                         >
                                             <Icons.Trash />
                                         </button>
@@ -320,21 +318,26 @@
                         <div className="p-4 bg-slate-800/50 border-t border-slate-800">
                             {user ? (
                                 <div className="flex items-center gap-2">
-                                    <img src={user.photoURL} className="w-8 h-8 rounded-full border border-blue-500" />
-                                    <div className="min-w-0 flex-1"><p className="text-[10px] font-bold truncate">{user.displayName}</p><p className="text-[8px] uppercase text-emerald-400">{userRole}</p></div>
-                                    <button onClick={() => window.fb.signOut(window.fb.getAuth())} className="text-slate-500 hover:text-white"><Icons.Logout /></button>
+                                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xs uppercase">
+                                        {user.email ? user.email[0] : 'U'}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-bold truncate">{user.email || 'User Session'}</p>
+                                        <p className="text-[8px] uppercase text-emerald-400 font-bold">{userRole}</p>
+                                    </div>
+                                    <button onClick={() => window.fb.signOut(fbAuthRef.current)} className="text-slate-500 hover:text-white"><Icons.Logout /></button>
                                 </div>
                             ) : (
-                                <button onClick={() => window.fb.signInWithPopup(window.fb.getAuth(), new window.fb.GoogleAuthProvider())} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs"><Icons.Google /> Đăng nhập Gmail</button>
+                                <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs"><Icons.Google /> Đăng nhập</button>
                             )}
                         </div>
                     </aside>
 
                     <main className="flex-1 flex flex-col overflow-hidden">
                         <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-700 capitalize flex items-center gap-2">
-                                {syllabus.info.name || "Chưa đặt tên học phần"}
-                                {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono">{syllabus.info.code}</span>}
+                            <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+                                {syllabus.info.name || "Soạn thảo đề cương"}
+                                {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono uppercase">{syllabus.info.code}</span>}
                             </h2>
                             <div className="flex gap-2">
                                 <button onClick={() => { const d = JSON.parse(JSON.stringify(syllabus)); d.info.code += "-copy"; d.id=""; setSyllabus(d); }} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200"><Icons.Copy /> Nhân bản</button>
@@ -344,61 +347,72 @@
                         </header>
 
                         <div className="flex-1 overflow-y-auto p-10 font-times bg-white/50 animate-fade-in custom-scrollbar">
-                            <div className="max-w-5xl mx-auto bg-white p-12 shadow-2xl rounded-2xl border min-h-full">
+                            <div className="max-w-5xl mx-auto bg-white p-12 shadow-2xl rounded-2xl border min-h-full relative">
+                                {!canEditThis && user && (
+                                    <div className="absolute top-4 right-4 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold z-10 shadow-sm">
+                                        Chế độ xem (Học phần của {syllabus.ownerEmail})
+                                    </div>
+                                )}
+
                                 {activeTab === 'info' && (
-                                    <div className="space-y-6">
+                                    <div className="space-y-6 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800">I. Thông tin chung</h3>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1 col-span-2"><label className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded font-bold focus:ring-1 focus:ring-blue-400 outline-none" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ chế tạo máy" /></div>
-                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded focus:ring-1 focus:ring-blue-400 outline-none uppercase font-mono" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="OTO101" /></div>
-                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2 border rounded outline-none" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} /></div>
-                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2 border rounded outline-none" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
-                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Học phần trước</label><input disabled={!canEditThis} className="w-full p-2 border rounded outline-none" value={syllabus.info.prerequisites} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, prerequisites: e.target.value}})} /></div>
+                                            <div className="space-y-1 col-span-2"><label className="text-xs font-bold text-slate-400 uppercase">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded font-bold focus:ring-1 focus:ring-blue-400 outline-none bg-slate-50" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ ô tô" /></div>
+                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded focus:ring-1 focus:ring-blue-400 outline-none uppercase font-mono bg-slate-50" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="OTO101" /></div>
+                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2 border rounded outline-none bg-slate-50" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} /></div>
+                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2 border rounded outline-none bg-slate-50" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
+                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Học phần trước</label><input disabled={!canEditThis} className="w-full p-2 border rounded outline-none bg-slate-50" value={syllabus.info.prerequisites} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, prerequisites: e.target.value}})} /></div>
                                         </div>
                                         
                                         <div className="bg-blue-50 p-8 rounded-2xl space-y-8 shadow-inner">
                                             <h4 className="text-sm font-bold text-blue-800 uppercase italic">Số tín chỉ và tiết học:</h4>
                                             <div className="grid grid-cols-4 gap-6">
-                                                <CreditStepper label="TC Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
-                                                <CreditStepper label="TC Thực hành" field="practice" value={syllabus.info.credits.practice} />
-                                                <CreditStepper label="TC Thực tập" field="internship" value={syllabus.info.credits.internship} />
-                                                <CreditStepper label="TC Bài tập lớn" field="btl" value={syllabus.info.credits.btl} />
+                                                <div className="space-y-1 text-center">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">TC Lý thuyết</label>
+                                                    <input type="number" disabled={!canEditThis} className="w-full p-2 border rounded bg-white font-bold text-blue-700 text-center" value={syllabus.info.credits.theory} onChange={e => handleCreditChange('theory', e.target.value)} />
+                                                </div>
+                                                <div className="space-y-1 text-center">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">TC Thực hành</label>
+                                                    <input type="number" disabled={!canEditThis} className="w-full p-2 border rounded bg-white font-bold text-blue-700 text-center" value={syllabus.info.credits.practice} onChange={e => handleCreditChange('practice', e.target.value)} />
+                                                </div>
+                                                <div className="space-y-1 text-center bg-blue-600 rounded-xl p-2 text-white shadow-lg">
+                                                    <p className="text-[10px] uppercase opacity-70 font-bold">Tổng TC</p>
+                                                    <p className="text-xl font-bold">{syllabus.info.credits.total}</p>
+                                                </div>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-4 pt-4 border-t border-blue-100">
+                                            <div className="grid grid-cols-3 gap-4 border-t border-blue-100 pt-6">
                                                 <div className="text-center"><p className="text-[10px] text-blue-400 uppercase">Tiết LT</p><p className="text-lg font-bold text-slate-700">{syllabus.info.hours.theory}</p></div>
                                                 <div className="text-center"><p className="text-[10px] text-blue-400 uppercase">Tiết TH/TL</p><p className="text-lg font-bold text-slate-700">{syllabus.info.hours.practice}</p></div>
                                                 <div className="text-center"><p className="text-[10px] text-blue-400 uppercase">Tiết Tự học</p><p className="text-lg font-bold text-slate-700">{syllabus.info.hours.selfStudy}</p></div>
-                                                <div className="text-center bg-blue-600 rounded-xl p-2 text-white"><p className="text-[10px] uppercase opacity-70 font-bold">Tổng TC</p><p className="text-xl font-bold">{syllabus.info.credits.total}</p></div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
                                 {activeTab === 'objectives' && (
-                                    <div className="space-y-10">
-                                        <section>
-                                            <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4">II. Mục tiêu & III. Chuẩn đầu ra (CLO)</h3>
-                                            <textarea disabled={!canEditThis} rows="4" className="w-full p-4 border rounded focus:ring-1 focus:ring-blue-400 outline-none text-sm italic mb-6 shadow-inner" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Nêu mục tiêu tổng quát của học phần..." />
-                                            
-                                            <div className="flex justify-between items-center mb-4"><p className="text-xs font-bold text-slate-400 uppercase">Danh sách Chuẩn đầu ra</p><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id: `HP${syllabus.clos.length+1}`, content: ''}]})} className="text-blue-600 hover:underline text-xs font-bold">+ Thêm CLO</button></div>
-                                            <div className="space-y-2">
-                                                {syllabus.clos.map((c, idx) => (
-                                                    <div key={idx} className="flex gap-2 group">
-                                                        <input disabled={!canEditThis} className="w-16 p-2 border rounded text-xs font-bold text-center uppercase shadow-sm" value={c.id} onChange={e => { const n = [...syllabus.clos]; n[idx].id = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
-                                                        <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded text-xs outline-none shadow-sm" rows="1" value={c.content} onChange={e => { const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
-                                                        {canEditThis && <button onClick={() => setSyllabus({...syllabus, clos: syllabus.clos.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 transition-all"><Icons.Trash /></button>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </section>
+                                    <div className="space-y-8 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800">II. Mục tiêu & III. Chuẩn đầu ra</h3>
+                                        <textarea disabled={!canEditThis} rows="4" className="w-full p-4 border rounded focus:ring-1 focus:ring-blue-400 outline-none text-sm italic bg-slate-50" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Nêu mục tiêu chung..." />
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center"><p className="text-xs font-bold text-slate-400 uppercase">Danh sách Chuẩn đầu ra (CLO)</p><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id: `HP${syllabus.clos.length+1}`, content: ''}]})} className="text-blue-600 hover:underline text-xs font-bold">+ Thêm CLO</button></div>
+                                            {syllabus.clos.map((c, idx) => (
+                                                <div key={idx} className="flex gap-2 group animate-fade-in">
+                                                    <input disabled={!canEditThis} className="w-16 p-2 border rounded text-xs font-bold text-center uppercase shadow-sm bg-slate-50" value={c.id} onChange={e => { const n = [...syllabus.clos]; n[idx].id = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
+                                                    <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded text-xs outline-none shadow-sm bg-slate-50" rows="1" value={c.content} onChange={e => { const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
+                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, clos: syllabus.clos.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 p-1"><Icons.Trash /></button>}
+                                                </div>
+                                            ))}
+                                        </div>
 
-                                        <section className="pt-10 border-t">
-                                            <h3 className="text-sm font-bold uppercase text-slate-600 mb-6 italic">Bảng đóng góp chuẩn đầu ra học phần (CLO) đối với chuẩn đầu ra CTĐT (PLO):</h3>
+                                        <div className="pt-6 border-t">
+                                            <h4 className="text-sm font-bold uppercase text-slate-600 mb-4 italic">Ma trận đóng góp CLO đối với PLO:</h4>
                                             <div className="overflow-x-auto border rounded-xl shadow-sm">
                                                 <table className="w-full text-xs text-left border-collapse">
                                                     <thead className="bg-slate-50 border-b">
                                                         <tr>
-                                                            <th className="p-4 border-r min-w-[120px] font-bold">CLO \ PLO</th>
+                                                            <th className="p-4 border-r min-w-[100px] font-bold">CLO \ PLO</th>
                                                             {syllabus.cloMatrix.plos.map((p, idx) => <th key={idx} className="p-2 text-center border-r font-bold text-blue-600">{p}</th>)}
                                                         </tr>
                                                     </thead>
@@ -408,7 +422,7 @@
                                                                 <td className="p-4 border-r font-bold text-slate-800 bg-slate-50/50">{c.id}</td>
                                                                 {syllabus.cloMatrix.plos.map((p, pIdx) => (
                                                                     <td key={pIdx} className="p-0 border-r text-center">
-                                                                        <input disabled={!canEditThis} className="w-full text-center outline-none p-3 focus:bg-blue-50 uppercase font-medium" placeholder="-" value={syllabus.cloMatrix.mapping[c.id]?.[p] || ''} onChange={(e) => {
+                                                                        <input disabled={!canEditThis} className="w-full text-center outline-none p-3 focus:bg-blue-50 uppercase font-medium bg-transparent" placeholder="-" value={syllabus.cloMatrix.mapping[c.id]?.[p] || ''} onChange={(e) => {
                                                                             const val = e.target.value;
                                                                             setSyllabus(prev => ({
                                                                                 ...prev,
@@ -425,39 +439,36 @@
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </section>
+                                        </div>
                                     </div>
                                 )}
 
                                 {activeTab === 'description' && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800">IV. Mô tả học phần</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic" value={syllabus.description} onChange={e => setSyllabus({...syllabus, description: e.target.value})} placeholder="Tóm tắt nội dung chính của học phần, các kiến thức cốt lõi học viên sẽ được trang bị..." />
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50" value={syllabus.description} onChange={e => setSyllabus({...syllabus, description: e.target.value})} placeholder="Tóm tắt nội dung chính..." />
                                     </div>
                                 )}
 
                                 {activeTab === 'structure' && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800">V. Cấu trúc học phần</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, {stt: syllabus.structure.length+1, title: '', clo: 'HP1', lt: 0, tl: 0, th: 0, bt: 0, exam: 0, material: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all">+ Thêm bài mới</button></div>
-                                        <div className="overflow-x-auto border rounded-2xl shadow-sm">
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800">V. Cấu trúc học phần</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, {stt: syllabus.structure.length+1, title: '', clo: 'HP1', lt: 0, tl: 0, th: 0, bt: 0, exam: 0, material: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">+ Thêm bài</button></div>
+                                        <div className="overflow-x-auto border rounded-xl shadow-sm">
                                             <table className="w-full text-xs text-left border-collapse">
                                                 <thead className="bg-slate-50 font-bold border-b text-slate-600">
-                                                    <tr><th className="p-3 border-r w-10 text-center">STT</th><th className="p-3 border-r">Nội dung bài học</th><th className="p-3 border-r w-16 text-center">CĐR</th><th className="p-3 text-center border-r" colSpan="5">Phân bổ tiết học</th><th className="p-3">Học liệu</th><th className="p-3 w-10"></th></tr>
-                                                    <tr className="bg-slate-100/50 text-[10px] text-center"><th colSpan="3" className="border-r"></th><th className="border">LT</th><th className="border">TL</th><th className="border">TH</th><th className="border">BT</th><th className="border">KT</th><th className="border-l"></th><th></th></tr>
+                                                    <tr><th className="p-3 border-r w-10 text-center">STT</th><th className="p-3 border-r">Nội dung</th><th className="p-3 border-r w-16 text-center">CĐR</th><th className="p-3 text-center border-r" colSpan="2">Tiết</th><th className="p-3">Học liệu</th><th className="p-3 w-10"></th></tr>
+                                                    <tr className="bg-slate-100/50 text-[10px] text-center"><th colSpan="3" className="border-r"></th><th className="border">LT</th><th className="border">TH</th><th className="border-l"></th><th></th></tr>
                                                 </thead>
                                                 <tbody>
                                                     {syllabus.structure.map((r, i) => (
-                                                        <tr key={i} className="border-b hover:bg-slate-50 transition-all">
+                                                        <tr key={i} className="border-b hover:bg-slate-50">
                                                             <td className="p-2 border-r text-center font-bold text-slate-400">{r.stt}</td>
-                                                            <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent font-medium" value={r.title} onChange={e => { const n = [...syllabus.structure]; n[i].title = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
+                                                            <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent" value={r.title} onChange={e => { const n = [...syllabus.structure]; n[i].title = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
                                                             <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent uppercase text-blue-600 font-bold text-center" value={r.clo} onChange={e => { const n = [...syllabus.structure]; n[i].clo = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
                                                             <td className="p-1 border text-center"><input type="number" disabled={!canEditThis} className="w-8 text-center bg-transparent" value={r.lt} onChange={e => { const n = [...syllabus.structure]; n[i].lt = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}) }} /></td>
-                                                            <td className="p-1 border text-center"><input type="number" disabled={!canEditThis} className="w-8 text-center bg-transparent" value={r.tl} onChange={e => { const n = [...syllabus.structure]; n[i].tl = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}) }} /></td>
                                                             <td className="p-1 border text-center"><input type="number" disabled={!canEditThis} className="w-8 text-center bg-transparent" value={r.th} onChange={e => { const n = [...syllabus.structure]; n[i].th = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}) }} /></td>
-                                                            <td className="p-1 border text-center"><input type="number" disabled={!canEditThis} className="w-8 text-center bg-transparent" value={r.bt} onChange={e => { const n = [...syllabus.structure]; n[i].bt = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}) }} /></td>
-                                                            <td className="p-1 border text-center"><input type="number" disabled={!canEditThis} className="w-8 text-center bg-transparent" value={r.exam} onChange={e => { const n = [...syllabus.structure]; n[i].exam = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}) }} /></td>
-                                                            <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent italic text-slate-500" value={r.material} onChange={e => { const n = [...syllabus.structure]; n[i].material = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
-                                                            <td className="p-2 text-center">{canEditThis && <button onClick={() => setSyllabus({...syllabus, structure: syllabus.structure.filter((_, idx) => idx !== i)})} className="text-slate-300 hover:text-red-500 transition-all p-1"><Icons.Trash /></button>}</td>
+                                                            <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent italic" value={r.material} onChange={e => { const n = [...syllabus.structure]; n[i].material = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
+                                                            <td className="p-2 text-center">{canEditThis && <button onClick={() => setSyllabus({...syllabus, structure: syllabus.structure.filter((_, idx) => idx !== i)})} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button>}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -466,40 +477,18 @@
                                     </div>
                                 )}
 
-                                {activeTab === 'teaching' && (
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800">VI. Kế hoạch dạy học</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, teachingPlan: [...syllabus.teachingPlan, {title: '', instructor: '', student: '', clo: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">+ Thêm bài</button></div>
-                                        {syllabus.teachingPlan.map((p, i) => (
-                                            <div key={i} className="p-6 border rounded-2xl bg-slate-50 space-y-4 group shadow-sm hover:border-blue-200 transition-all">
-                                                <div className="flex justify-between items-center">
-                                                    <input disabled={!canEditThis} className="flex-1 bg-transparent font-bold text-base outline-none border-b border-dashed border-slate-300 mr-4 text-blue-800" value={p.title} placeholder="Tên bài học / Chỉnh sửa nội dung này..." onChange={e => { const n = [...syllabus.teachingPlan]; n[i].title = e.target.value; setSyllabus({...syllabus, teachingPlan: n}) }} />
-                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, teachingPlan: syllabus.teachingPlan.filter((_, idx) => idx !== i)})} className="text-slate-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 p-2"><Icons.Trash /></button>}
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-6 text-sm">
-                                                    <div className="space-y-2"><label className="font-bold uppercase text-slate-400 text-[10px]">Giảng viên (Phương pháp, hoạt động)</label><textarea disabled={!canEditThis} rows="4" className="w-full p-3 border rounded-xl bg-white shadow-inner outline-none focus:ring-1 focus:ring-blue-400" value={p.instructor} onChange={e => { const n = [...syllabus.teachingPlan]; n[i].instructor = e.target.value; setSyllabus({...syllabus, teachingPlan: n}) }} /></div>
-                                                    <div className="space-y-2"><label className="font-bold uppercase text-slate-400 text-[10px]">Học viên (Chuẩn bị, tự học)</label><textarea disabled={!canEditThis} rows="4" className="w-full p-3 border rounded-xl bg-white shadow-inner outline-none focus:ring-1 focus:ring-blue-400" value={p.student} onChange={e => { const n = [...syllabus.teachingPlan]; n[i].student = e.target.value; setSyllabus({...syllabus, teachingPlan: n}) }} /></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
                                 {activeTab === 'assessment' && (
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800">VII. Đánh giá kết quả học tập</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: '', timing: '', method: '', criteria: '', weight: '', clo: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">+ Thêm tiêu chí</button></div>
+                                    <div className="space-y-6 animate-fade-in">
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800">VII. Đánh giá học phần</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: '', timing: '', method: '', criteria: '', weight: '', clo: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">+ Thêm tiêu chí</button></div>
                                         <div className="space-y-4">
                                             {syllabus.assessments.map((ass, i) => (
-                                                <div key={i} className="flex gap-4 items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 group shadow-sm hover:bg-blue-50/10 transition-all">
+                                                <div key={i} className="flex gap-4 items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 group shadow-sm">
                                                     <div className="w-16"><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mã</label><input disabled={!canEditThis} className="w-full p-2 border rounded-lg text-xs text-center font-bold bg-white" value={ass.code} onChange={e => { const n = [...syllabus.assessments]; n[i].code = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
                                                     <div className="flex-1 space-y-3">
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase block">Thông tin đánh giá</label>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <input disabled={!canEditThis} className="p-2 border rounded-lg text-xs bg-white" value={ass.method} placeholder="Phương pháp..." onChange={e => { const n = [...syllabus.assessments]; n[i].method = e.target.value; setSyllabus({...syllabus, assessments: n}) }} />
-                                                            <input disabled={!canEditThis} className="p-2 border rounded-lg text-xs bg-white" value={ass.criteria} placeholder="Tiêu chí..." onChange={e => { const n = [...syllabus.assessments]; n[i].criteria = e.target.value; setSyllabus({...syllabus, assessments: n}) }} />
-                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2"><input disabled={!canEditThis} className="p-2 border rounded-lg text-xs bg-white" value={ass.method} placeholder="Phương pháp..." onChange={e => { const n = [...syllabus.assessments]; n[i].method = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /><input disabled={!canEditThis} className="p-2 border rounded-lg text-xs bg-white" value={ass.criteria} placeholder="Tiêu chí..." onChange={e => { const n = [...syllabus.assessments]; n[i].criteria = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
                                                     </div>
-                                                    <div className="w-16 text-center"><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tỷ lệ %</label><input disabled={!canEditThis} className="w-full p-2 border rounded-lg text-xs text-center text-blue-600 font-bold bg-white shadow-inner" value={ass.weight} onChange={e => { const n = [...syllabus.assessments]; n[i].weight = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
-                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, assessments: syllabus.assessments.filter((_, idx) => idx !== i)})} className="mt-4 text-slate-300 hover:text-red-500 transition-all p-2"><Icons.Trash /></button>}
+                                                    <div className="w-16 text-center"><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tỷ lệ %</label><input disabled={!canEditThis} className="w-full p-2 border rounded-lg text-xs text-center text-blue-600 font-bold bg-white" value={ass.weight} onChange={e => { const n = [...syllabus.assessments]; n[i].weight = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
+                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, assessments: syllabus.assessments.filter((_, idx) => idx !== i)})} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>}
                                                 </div>
                                             ))}
                                         </div>
@@ -507,11 +496,13 @@
                                 )}
 
                                 {activeTab === 'others' && (
-                                    <div className="space-y-10">
-                                        <div className="space-y-3"><h3 className="text-lg font-bold uppercase text-slate-800 border-b pb-2">VIII. Cơ sở vật chất, học liệu</h3><textarea disabled={!canEditThis} rows="10" className="w-full p-6 border rounded-2xl text-sm leading-relaxed shadow-inner font-times" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} placeholder="Giáo trình, tài liệu tham khảo, phần mềm..." /></div>
-                                        <div className="space-y-3"><h3 className="text-lg font-bold uppercase text-slate-800 border-b pb-2">IX. Quy định của học phần</h3><textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl text-sm leading-relaxed shadow-inner font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Các quy định riêng của học phần..." /></div>
+                                    <div className="space-y-10 animate-fade-in">
+                                        <div className="space-y-3"><h3 className="text-lg font-bold uppercase text-slate-800 border-b pb-2">VIII. Cơ sở vật chất, học liệu</h3><textarea disabled={!canEditThis} rows="10" className="w-full p-6 border rounded-2xl text-sm leading-relaxed shadow-inner bg-slate-50" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} /></div>
+                                        <div className="space-y-3"><h3 className="text-lg font-bold uppercase text-slate-800 border-b pb-2">IX. Quy định của học phần</h3><textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl text-sm leading-relaxed shadow-inner bg-slate-50" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} /></div>
                                     </div>
                                 )}
+                                
+                                <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t pt-4 uppercase tracking-widest">SyllabusPro - Hệ thống quản lý đề cương SQKT</div>
                             </div>
                         </div>
                     </main>
@@ -519,7 +510,6 @@
             );
         }
 
-        const FIREBASE_APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>

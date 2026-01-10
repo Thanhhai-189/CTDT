@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro - Khoa Ô tô (Fix Role Auth)</title>
+    <title>SyllabusPro - Khoa Ô tô (Debug Role)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,7 +15,7 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Thư viện xử lý Word -->
+    <!-- Thư viện Word -->
     <script src="https://unpkg.com/docx@8.2.2/build/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -23,37 +23,20 @@
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
-            getAuth, 
-            signInWithPopup, 
-            GoogleAuthProvider, 
-            signOut, 
-            onAuthStateChanged 
+            getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            collection, 
-            onSnapshot, 
-            deleteDoc 
+            getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        window.fb = { 
-            initializeApp, getApps, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, 
-            getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc 
-        };
+        window.fb = { initializeApp, getApps, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc };
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .font-times { font-family: "Times New Roman", Times, serif; }
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -69,39 +52,10 @@
             Target: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
             Layers: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
             Assessment: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>,
-            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>,
-            Minus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/></svg>,
-            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
             Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
-            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
-            Google: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083L43.595,20L42,20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>,
             Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-            Alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
-            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        };
-
-        const initialSyllabus = {
-            id: '',
-            header: { schoolName: 'TRƯỜNG SĨ QUAN KTQS', department: 'KHOA Ô TÔ', city: 'Thành phố Hồ Chí Minh', year: '2025' },
-            info: { 
-                name: 'Hệ thống điện - điện tử ô tô', 
-                code: 'OTO2025', 
-                major: 'Kỹ thuật ô tô', 
-                type: 'Bắt buộc', 
-                prerequisites: 'Cơ sở điện kỹ thuật', 
-                parallel: 'Không', 
-                contact: 'Bộ môn Điện ô tô - Khoa Ô tô', 
-                credits: { theory: 2, practice: 1, internship: 0, total: 3 }, 
-                hours: { total: 62, classroom: 60, theory: 30, practice: 30, internship: 0, exam: 2, selfStudy: 90 } 
-            },
-            objectives: 'Học viên nắm vững cấu tạo, nguyên lý làm việc và quy trình chẩn đoán các hệ thống điện trên xe hiện đại.',
-            clos: [{ id: 'HP1', content: 'Phân tích được sơ đồ mạch điện trên các dòng xe phổ dụng.' }],
-            cloMatrix: { plos: ['KT 1', 'KT 2', 'KN 1', 'KN 2'], mapping: {} },
-            structure: [{ stt: 1, title: 'Bài 1: Hệ thống nguồn điện trên ô tô', clo: 'HP1', lt: 4, th: 2 }],
-            assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', weight: '10%', clo: 'HP1' }],
-            materials: '1. Học liệu bắt buộc: Giáo trình Điện ô tô hiện đại (2024).\n2. Học liệu tham khảo: Workshop Manual Toyota Vios.',
-            regulations: 'Học viên đạt 5 điểm trở lên đối với phần thực hành mới được phép dự thi kết thúc học phần.'
+            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+            Google: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083L43.595,20L42,20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
         };
 
         const FIREBASE_CONFIG = {
@@ -115,15 +69,12 @@
         };
 
         function App() {
-            const [syllabus, setSyllabus] = useState(initialSyllabus);
-            const [savedSyllabi, setSavedSyllabi] = useState([]);
-            const [activeTab, setActiveTab] = useState('info');
             const [user, setUser] = useState(null);
             const [userRole, setUserRole] = useState('checking...'); 
             const [loading, setLoading] = useState(true);
-            const [isSaving, setIsSaving] = useState(false);
-            const [authError, setAuthError] = useState(null);
-            
+            const [activeTab, setActiveTab] = useState('info');
+            const [syllabus, setSyllabus] = useState({ info: { name: 'Đề cương mới', code: '' }, credits: { theory: 0, practice: 0, internship: 0, total: 0 } });
+
             const fbAppRef = useRef(null);
             const fbDbRef = useRef(null);
             const fbAuthRef = useRef(null);
@@ -132,382 +83,150 @@
                 if (!u) return;
                 const { doc, getDoc } = window.fb;
                 try {
-                    console.log("Checking Firestore for UID:", u.uid);
+                    // Truy vấn TRỰC TIẾP theo UID
                     const userDoc = await getDoc(doc(fbDbRef.current, 'users', u.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
-                        // Kiểm tra cả 'role' và 'Role' đề phòng gõ sai
-                        const role = data.role || data.Role || null;
-                        if (role) {
-                            console.log("Role found:", role);
-                            setUserRole(role);
+                        const allFields = Object.keys(data);
+                        
+                        // Tìm trường "role" (không phân biệt hoa thường)
+                        const roleKey = allFields.find(k => k.trim().toLowerCase() === 'role');
+                        const roleValue = roleKey ? data[roleKey] : null;
+
+                        if (roleValue) {
+                            setUserRole(roleValue.toString().toLowerCase());
+                            console.log("Quyền hạn xác định:", roleValue);
                         } else {
-                            console.warn("Document exists but no 'role' field found in:", data);
-                            setUserRole('guest (no-field)');
+                            // CẢI TIẾN DEBUG: Hiện các trường đang có
+                            setUserRole(`guest (Tìm thấy doc nhưng thiếu field 'role'. Đang có: ${allFields.join(', ') || 'trống'})`);
                         }
                     } else {
-                        console.warn("No document found in collection 'users' for UID:", u.uid);
-                        setUserRole('guest (no-doc)');
+                        setUserRole(`guest (Không tìm thấy doc với ID: ${u.uid})`);
                     }
                 } catch (e) {
-                    console.error("Firestore Error:", e);
-                    setUserRole('error');
+                    console.error(e);
+                    setUserRole('error: ' + e.message);
                 }
             };
 
             useEffect(() => {
-                const initFirebase = async () => {
-                    try {
-                        const { initializeApp, getApps, getAuth, onAuthStateChanged, getFirestore } = window.fb;
-                        if (!fbAppRef.current) {
-                            fbAppRef.current = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-                            fbDbRef.current = getFirestore(fbAppRef.current);
-                            fbAuthRef.current = getAuth(fbAppRef.current);
-                        }
+                const { initializeApp, getApps, getAuth, onAuthStateChanged, getFirestore } = window.fb;
+                if (!fbAppRef.current) {
+                    fbAppRef.current = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+                    fbDbRef.current = getFirestore(fbAppRef.current);
+                    fbAuthRef.current = getAuth(fbAppRef.current);
+                }
 
-                        onAuthStateChanged(fbAuthRef.current, async (u) => {
-                            setUser(u);
-                            if (u) {
-                                setAuthError(null);
-                                await fetchUserRole(u);
-                            } else {
-                                setUserRole('guest');
-                            }
-                            setLoading(false);
-                        });
-                    } catch (e) {
-                        console.error("Firebase Init Error:", e);
-                        setLoading(false);
-                    }
-                };
-                initFirebase();
-            }, []);
-
-            useEffect(() => {
-                if (!user || !fbDbRef.current) return;
-                const { collection, onSnapshot } = window.fb;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
-                const q = collection(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi');
-                const unsubscribe = onSnapshot(q, (snapshot) => {
-                    setSavedSyllabi(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                const unsubscribe = onAuthStateChanged(fbAuthRef.current, async (u) => {
+                    setUser(u);
+                    if (u) await fetchUserRole(u);
+                    else setUserRole('guest');
+                    setLoading(false);
                 });
                 return () => unsubscribe();
-            }, [user]);
+            }, []);
 
             const handleLogin = async () => {
                 const { signInWithPopup, GoogleAuthProvider } = window.fb;
-                const provider = new GoogleAuthProvider();
                 try {
-                    setAuthError(null);
-                    await signInWithPopup(fbAuthRef.current, provider);
-                } catch (e) {
-                    if (e.code === 'auth/unauthorized-domain') {
-                        setAuthError(window.location.hostname);
-                    } else {
-                        setAuthError(`Lỗi: ${e.message}`);
-                    }
-                }
+                    await signInWithPopup(fbAuthRef.current, new GoogleAuthProvider());
+                } catch (e) { alert(e.message); }
             };
 
             const handleLogout = async () => {
-                const { signOut } = window.fb;
-                await signOut(fbAuthRef.current);
+                await window.fb.signOut(fbAuthRef.current);
                 setUserRole('guest');
             };
 
             const canWrite = userRole === 'admin' || userRole === 'editor';
 
-            const exportWord = () => {
-                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType } = window.docx;
-                const docObj = new Document({
-                    sections: [{
-                        children: [
-                            new Paragraph({ text: syllabus.header.schoolName, bold: true, alignment: AlignmentType.CENTER }),
-                            new Paragraph({ text: "ĐỀ CƯƠNG HỌC PHẦN", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { before: 400, after: 400 } }),
-                            new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG", bold: true })] }),
-                            new Paragraph({ text: `Học phần: ${syllabus.info.name}` }),
-                            new Paragraph({ text: `Mã học phần: ${syllabus.info.code}` }),
-                            new Paragraph({ text: `Số tín chỉ: ${syllabus.info.credits.total}` }),
-                            new Paragraph({ text: `Số tiết lên lớp: ${syllabus.info.hours.classroom} (LT: ${syllabus.info.hours.theory}, TH: ${syllabus.info.hours.practice + syllabus.info.hours.internship})` }),
-                        ]
-                    }]
-                });
-                Packer.toBlob(docObj).then(blob => { window.saveAs(blob, `De_cuong_${syllabus.info.code}.docx`); });
-            };
-
-            const saveToCloud = async () => {
-                if (!user) return alert("Vui lòng đăng nhập Gmail trước.");
-                if (!canWrite) return alert(`Bạn hiện có quyền: ${userRole.toUpperCase()}. Cần ADMIN hoặc EDITOR.`);
-                
-                setIsSaving(true);
-                const { doc, setDoc } = window.fb;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
-                const docId = syllabus.info.code || ("syllabus-" + Date.now());
-                try {
-                    await setDoc(doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', docId), { ...syllabus, id: docId, updatedAt: new Date().toISOString() });
-                    alert("Đã lưu thành công!");
-                } catch (e) { alert("Lỗi: " + e.message); }
-                setIsSaving(false);
-            };
-
-            const deleteSyllabus = async (id) => {
-                if (!canWrite) return alert("Không có quyền.");
-                if (!confirm("Xóa học phần này?")) return;
-                const { doc, deleteDoc } = window.fb;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app';
-                try {
-                    await deleteDoc(doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', id));
-                } catch (e) { alert("Lỗi: " + e.message); }
-            };
-
-            const handleCreditChange = (field, value) => {
-                const val = Math.max(0, parseFloat(value) || 0);
-                setSyllabus(prev => {
-                    const newCredits = { ...prev.info.credits, [field]: val };
-                    newCredits.total = (newCredits.theory || 0) + (newCredits.practice || 0) + (newCredits.internship || 0);
-                    const newHours = { ...prev.info.hours };
-                    newHours.theory = newCredits.theory * 15;
-                    newHours.practice = newCredits.practice * 30;
-                    newHours.internship = newCredits.internship * 45;
-                    newHours.classroom = newHours.theory + newHours.practice + newHours.internship;
-                    newHours.total = newHours.classroom + newHours.exam;
-                    newHours.selfStudy = newCredits.total * 30;
-                    return { ...prev, info: { ...prev.info, credits: newCredits, hours: newHours } };
-                });
-            };
-
-            const CreditStepper = ({ label, field, value }) => (
-                <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-                    <div className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg overflow-hidden h-10 shadow-sm">
-                        <button onClick={() => handleCreditChange(field, value - 1)} disabled={!canWrite} className="w-10 h-full bg-slate-50 hover:bg-red-50 text-red-600 border-r border-blue-100 disabled:opacity-30 transition-colors"><Icons.Minus /></button>
-                        <div className="flex-1 text-center font-bold text-sm text-blue-700">{value}</div>
-                        <button onClick={() => handleCreditChange(field, value + 1)} disabled={!canWrite} className="w-10 h-full bg-slate-50 hover:bg-emerald-50 text-emerald-600 border-l border-blue-100 disabled:opacity-30 transition-colors"><Icons.Plus /></button>
-                    </div>
-                </div>
-            );
-
-            if (loading) return <div className="h-screen flex items-center justify-center text-slate-500 font-medium animate-pulse italic">Đang đồng bộ quyền hạn từ Cloud...</div>;
+            if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500">Đang đồng bộ...</div>;
 
             return (
-                <div className="flex h-screen overflow-hidden bg-slate-100 font-inter text-slate-900">
+                <div className="flex h-screen bg-slate-100 overflow-hidden">
                     {/* Sidebar */}
-                    <aside className="w-72 bg-slate-900 text-white flex flex-col shrink-0 no-print">
+                    <aside className="w-80 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
                         <div className="p-6 border-b border-slate-800">
-                            <div className="flex items-center gap-2 mb-6 text-blue-400">
-                                <h1 className="font-bold text-lg text-white tracking-tighter">SyllabusPro</h1>
-                            </div>
-                            <button onClick={() => setSyllabus(initialSyllabus)} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all mb-3">
-                                <Icons.Plus /> Tạo học phần mới
-                            </button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2 bg-slate-900/50">
-                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">Dữ liệu Cloud</h3>
-                            {!user ? (
-                                <div className="p-4 bg-slate-800/30 rounded-xl border border-dashed border-slate-700 text-center">
-                                    <p className="text-[10px] text-slate-400 mb-4 italic">Đăng nhập để xem danh sách</p>
-                                    <button onClick={handleLogin} className="flex items-center justify-center gap-2 w-full bg-white text-slate-900 py-2 rounded-lg text-xs font-bold hover:bg-slate-100 transition-all shadow-lg"><Icons.Google /> Gmail</button>
-                                </div>
-                            ) : (
-                                savedSyllabi.map(item => (
-                                    <div key={item.id} onClick={() => setSyllabus(item)} className={`group relative p-3 rounded-xl cursor-pointer border ${syllabus.id === item.id ? 'bg-slate-800 border-blue-500/50' : 'border-transparent hover:bg-slate-800/50'}`}>
-                                        <p className="text-xs font-bold truncate text-slate-200">{item.info.name}</p>
-                                        <p className="text-[10px] text-slate-500">{item.info.code}</p>
-                                        {canWrite && <button onClick={(e) => { e.stopPropagation(); deleteSyllabus(item.id); }} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-500 p-1 transition-all"><Icons.Trash /></button>}
-                                    </div>
-                                ))
-                            )}
+                            <h1 className="font-bold text-xl tracking-tighter text-blue-400">SyllabusPro</h1>
+                            <p className="text-[10px] text-slate-500 uppercase mt-1">Hệ thống quản lý đề cương</p>
                         </div>
 
-                        <div className="p-4 border-t border-slate-800 bg-slate-900">
-                            {user ? (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                                        <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border border-blue-500/50" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] font-bold truncate text-slate-100">{user.displayName}</p>
-                                            <div className="flex items-center gap-1">
-                                                <p className={`text-[9px] font-bold uppercase ${canWrite ? 'text-emerald-400' : 'text-amber-400'}`}>{userRole}</p>
-                                                <button onClick={() => fetchUserRole(user)} className="text-slate-500 hover:text-white" title="Làm mới quyền"><Icons.Refresh /></button>
+                        <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                             <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                                <h3 className="text-[10px] font-bold text-slate-400 uppercase mb-4">Trạng thái xác thực</h3>
+                                {user ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <img src={user.photoURL} className="w-10 h-10 rounded-full border-2 border-blue-500/30" alt="avatar" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold truncate">{user.displayName}</p>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${canWrite ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                                        {userRole.includes('guest') ? 'Khách' : userRole}
+                                                    </span>
+                                                    <button onClick={() => fetchUserRole(user)} className="hover:text-blue-400 p-1"><Icons.Refresh /></button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <button onClick={handleLogout} title="Đăng xuất" className="text-slate-500 hover:text-white"><Icons.Logout /></button>
-                                    </div>
-                                    <p className="text-[8px] text-slate-600 truncate px-1 opacity-50">UID: {user.uid}</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {authError && (
-                                        <div className="p-3 bg-red-900/40 border border-red-500/50 rounded-lg text-[9px] text-red-200 animate-fade-in shadow-xl">
-                                            <div className="flex items-start gap-2 mb-2">
-                                                <Icons.Alert />
-                                                <span>Domain chưa được cấp phép trong Firebase: <strong>{authError}</strong></span>
+                                        
+                                        {userRole.includes('guest') && (
+                                            <div className="p-2 bg-red-900/20 border border-red-500/30 rounded text-[9px] text-red-300 leading-relaxed">
+                                                <p className="font-bold mb-1 underline">HƯỚNG DẪN FIX:</p>
+                                                {userRole.includes('no-doc') ? (
+                                                    <span>ID tài liệu trong Firestore chưa khớp UID bên dưới. Vui lòng tạo doc với ID chính xác là UID.</span>
+                                                ) : (
+                                                    <span>Tìm thấy tài liệu nhưng thiếu trường 'role'. Hãy thêm field 'role' kiểu string.</span>
+                                                )}
                                             </div>
+                                        )}
+
+                                        <div className="pt-2 border-t border-slate-800 flex flex-col gap-1">
+                                            <p className="text-[8px] text-slate-600 uppercase font-bold tracking-widest">Auth UID (Dùng làm Doc ID):</p>
+                                            <code className="text-[9px] bg-black/30 p-1.5 rounded text-blue-300 select-all block break-all font-mono leading-tight border border-white/5">
+                                                {user.uid}
+                                            </code>
                                             <button onClick={() => {
-                                                const el = document.createElement('textarea'); el.value = authError; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("Đã copy domain.");
-                                            }} className="w-full bg-red-500/30 hover:bg-red-500/50 p-1 rounded border border-red-400 text-center font-bold">Copy Domain</button>
+                                                const el = document.createElement('textarea'); el.value = user.uid; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("Đã copy UID!");
+                                            }} className="text-[9px] text-slate-500 hover:text-white mt-1 text-left italic">→ Nhấn để copy UID</button>
                                         </div>
-                                    )}
-                                    <button onClick={handleLogin} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold text-xs shadow-lg transition-all"><Icons.Google /> Đăng nhập Gmail</button>
-                                </div>
-                            )}
+
+                                        <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-red-900/30 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700 mt-2">
+                                            <Icons.Logout /> Đăng xuất
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button onClick={handleLogin} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold text-xs shadow-lg shadow-blue-900/20 transition-all">
+                                        <Icons.Google /> Login with Gmail
+                                    </button>
+                                )}
+                             </div>
                         </div>
                     </aside>
 
                     {/* Main */}
                     <main className="flex-1 flex flex-col overflow-hidden">
-                        <header className="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm no-print">
-                            <nav className="flex gap-8">
-                                {[
-                                    { id: 'info', label: 'Thông tin chung', icon: Icons.Info },
-                                    { id: 'objectives', label: 'Mục tiêu & CĐR', icon: Icons.Target },
-                                    { id: 'structure', label: 'Cấu trúc bài', icon: Icons.Layers },
-                                    { id: 'assessment', label: 'Đánh giá', icon: Icons.Assessment }
-                                ].map(tab => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-2 text-sm font-bold pb-2 transition-all border-b-2 ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                                        <tab.icon /> {tab.label}
+                        <header className="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm">
+                             <nav className="flex gap-8">
+                                {['info', 'objectives', 'structure', 'assessment'].map(t => (
+                                    <button key={t} onClick={() => setActiveTab(t)} className={`text-sm font-bold pb-2 border-b-2 transition-all capitalize ${activeTab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}>
+                                        {t === 'info' ? 'Thông tin' : t === 'objectives' ? 'Mục tiêu' : t === 'structure' ? 'Cấu trúc' : 'Đánh giá'}
                                     </button>
                                 ))}
-                            </nav>
-                            <div className="flex items-center gap-4">
-                                <button onClick={saveToCloud} disabled={isSaving || !canWrite} className={`flex items-center gap-2 px-6 py-2 rounded-xl font-bold text-xs shadow transition-all ${!canWrite ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                                    <Icons.Save /> {isSaving ? 'Đang lưu...' : 'Lưu Cloud'}
-                                </button>
-                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold text-xs hover:bg-emerald-700 shadow transition-all"><Icons.FileText /> Word</button>
-                            </div>
+                             </nav>
+                             <button disabled={!canWrite} className={`flex items-center gap-2 px-6 py-2 rounded-xl font-bold text-xs shadow transition-all ${!canWrite ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                                <Icons.Save /> Lưu Cloud
+                             </button>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar font-times animate-fade-in">
-                            <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 p-12 min-h-full relative">
+                        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar animate-fade-in">
+                            <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 p-12 min-h-full relative">
                                 {!canWrite && user && (
-                                    <div className="absolute top-4 right-4 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold z-10 shadow-sm border-dashed">
-                                        Chế độ xem (Hạn chế quyền {userRole})
+                                    <div className="absolute top-4 right-6 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold z-10 animate-bounce">
+                                        CHẾ ĐỘ XEM (READ-ONLY)
                                     </div>
                                 )}
-
-                                {activeTab === 'info' && (
-                                    <div className="space-y-8 animate-fade-in">
-                                        <h2 className="text-xl font-bold border-b pb-2 uppercase tracking-tight">I. Thông tin chung học phần</h2>
-                                        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Học phần</label><input disabled={!canWrite} className="w-full p-2 bg-slate-50 border rounded-lg font-bold focus:ring-1 focus:ring-blue-400 outline-none" value={syllabus.info.name} onChange={(e) => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} /></div>
-                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Mã học phần</label><input disabled={!canWrite} className="w-full p-2 bg-slate-50 border rounded-lg focus:ring-1 focus:ring-blue-400 outline-none" value={syllabus.info.code} onChange={(e) => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} /></div>
-                                        </div>
-                                        <div className="mt-8 pt-6 border-t bg-blue-50/30 p-6 rounded-3xl space-y-6 shadow-inner">
-                                            <h3 className="text-sm font-bold text-blue-800 italic underline uppercase tracking-tighter">Cấu trúc Tín chỉ và Số tiết:</h3>
-                                            <div className="grid grid-cols-4 gap-6">
-                                                <CreditStepper label="TC Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
-                                                <CreditStepper label="TC Thực hành" field="practice" value={syllabus.info.credits.practice} />
-                                                <CreditStepper label="TC Thực tập" field="internship" value={syllabus.info.credits.internship} />
-                                                <div className="space-y-1 text-center"><label className="text-[10px] font-bold text-blue-600 uppercase">Tổng TC</label><div className="flex items-center justify-center h-10 bg-blue-600 text-white font-bold rounded-lg shadow-md border border-blue-700">{syllabus.info.credits.total}</div></div>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-6 pt-4 border-t border-blue-100">
-                                                <div className="space-y-1"><label className="text-[10px] font-bold text-blue-500 uppercase">+ Lý thuyết</label><div className="p-2 bg-white border rounded-lg text-center font-medium shadow-inner">{syllabus.info.hours.theory}</div></div>
-                                                <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-emerald-600 uppercase">+ Thực hành, thí nghiệm, bài tập, thảo luận</label><div className="p-2 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 shadow-inner">{syllabus.info.hours.practice + syllabus.info.hours.internship}</div></div>
-                                                <div className="space-y-1 text-center"><label className="text-[10px] font-bold text-red-500 uppercase">Tổng tiết học</label><div className="p-2 bg-red-100 text-red-700 font-bold rounded-lg border border-red-200 shadow-sm">{syllabus.info.hours.total}</div></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {activeTab === 'objectives' && (
-                                    <div className="space-y-10 animate-fade-in">
-                                        <section className="space-y-6">
-                                            <h2 className="text-xl font-bold border-b pb-2 uppercase tracking-tight">II. Mục tiêu & III. Chuẩn đầu ra</h2>
-                                            <textarea disabled={!canWrite} rows="4" className="w-full p-4 bg-slate-50 border rounded-2xl outline-none" value={syllabus.objectives} onChange={(e) => setSyllabus({...syllabus, objectives: e.target.value})} />
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center font-bold text-xs uppercase text-slate-400 tracking-widest">Danh sách CĐR <button disabled={!canWrite} onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id: `HP${syllabus.clos.length+1}`, content: ''}]})} className="text-blue-600 hover:underline">+ Thêm</button></div>
-                                                {syllabus.clos.map((clo, idx) => (
-                                                    <div key={idx} className="flex gap-3 bg-slate-50 p-3 rounded-xl border">
-                                                        <input disabled={!canWrite} className="w-20 p-2 bg-white border rounded-lg text-xs font-bold text-center" value={clo.id} onChange={(e) => {
-                                                            const n = [...syllabus.clos]; n[idx].id = e.target.value; setSyllabus({...syllabus, clos: n});
-                                                        }} />
-                                                        <textarea disabled={!canWrite} className="flex-1 p-2 bg-white border rounded-lg text-xs outline-none" rows="1" value={clo.content} onChange={(e) => {
-                                                            const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n});
-                                                        }} />
-                                                        {canWrite && <button onClick={() => setSyllabus({...syllabus, clos: syllabus.clos.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 p-1 transition-all"><Icons.Trash /></button>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </section>
-                                        <section className="space-y-6 pt-10 border-t">
-                                            <h3 className="text-lg font-bold uppercase text-slate-700 tracking-tighter">Ma trận đóng góp CLO đối với PLO:</h3>
-                                            <div className="overflow-x-auto border rounded-2xl shadow-sm">
-                                                <table className="w-full text-xs text-left">
-                                                    <thead className="bg-slate-50 border-b">
-                                                        <tr>
-                                                            <th className="p-4 border-r min-w-[120px]">CĐR HP</th>
-                                                            {syllabus.cloMatrix.plos.map((plo, idx) => <th key={idx} className="p-2 text-center border-r font-bold">{plo}</th>)}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {syllabus.clos.map((clo, cIdx) => (
-                                                            <tr key={cIdx} className="border-b">
-                                                                <td className="p-4 border-r font-bold text-blue-700 bg-slate-50">{clo.id}</td>
-                                                                {syllabus.cloMatrix.plos.map((plo, pIdx) => (
-                                                                    <td key={pIdx} className="p-1 border-r text-center">
-                                                                        <input disabled={!canWrite} className="w-full text-center outline-none p-2 focus:bg-white uppercase" placeholder="-" value={syllabus.cloMatrix.mapping?.[clo.id]?.[plo] || ''} onChange={(e) => {
-                                                                            const val = e.target.value;
-                                                                            setSyllabus(prev => ({
-                                                                                ...prev,
-                                                                                cloMatrix: {
-                                                                                    ...prev.cloMatrix,
-                                                                                    mapping: { ...prev.cloMatrix.mapping, [clo.id]: { ...prev.cloMatrix.mapping[clo.id], [plo]: val } }
-                                                                                }
-                                                                            }));
-                                                                        }} />
-                                                                    </td>
-                                                                ))}
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </section>
-                                    </div>
-                                )}
-
-                                {activeTab === 'structure' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h2 className="text-xl font-bold uppercase">V. Cấu trúc học phần</h2><button disabled={!canWrite} onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, {stt: syllabus.structure.length+1, title: '', clo: 'HP1', lt: 0, th: 0}]})} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg">+ Thêm bài mới</button></div>
-                                        <div className="border rounded-2xl overflow-hidden shadow-sm">
-                                            <table className="w-full text-xs text-left border-collapse">
-                                                <thead className="bg-slate-50 font-bold border-b">
-                                                    <tr><th className="p-3 w-12">STT</th><th className="p-3">Nội dung bài học</th><th className="p-3 w-16 text-center">CĐR</th><th className="p-3 w-12 text-center">LT</th><th className="p-3 w-12 text-center">TH</th><th className="p-3 w-10"></th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    {syllabus.structure.map((row, idx) => (
-                                                        <tr key={idx} className="border-b hover:bg-slate-50/50 transition-colors">
-                                                            <td className="p-3 font-bold text-center text-slate-500">{row.stt}</td>
-                                                            <td className="p-3"><input disabled={!canWrite} className="w-full outline-none bg-transparent" value={row.title} onChange={(e) => { const n = [...syllabus.structure]; n[idx].title = e.target.value; setSyllabus({...syllabus, structure: n}); }} /></td>
-                                                            <td className="p-3 text-center"><input disabled={!canWrite} className="w-full text-center outline-none bg-transparent" value={row.clo} onChange={(e) => { const n = [...syllabus.structure]; n[idx].clo = e.target.value; setSyllabus({...syllabus, structure: n}); }} /></td>
-                                                            <td className="p-3 text-center"><input disabled={!canWrite} className="w-full text-center outline-none bg-transparent" value={row.lt} onChange={(e) => { const n = [...syllabus.structure]; n[idx].lt = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}); }} /></td>
-                                                            <td className="p-3 text-center"><input disabled={!canWrite} className="w-full text-center outline-none bg-transparent" value={row.th} onChange={(e) => { const n = [...syllabus.structure]; n[idx].th = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}); }} /></td>
-                                                            <td className="p-3 text-center">{canWrite && <button onClick={() => setSyllabus({...syllabus, structure: syllabus.structure.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 p-1 transition-all"><Icons.Trash /></button>}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeTab === 'assessment' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h2 className="text-xl font-bold uppercase">VII. Đánh giá học phần</h2><button disabled={!canWrite} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: `A${syllabus.assessments.length+1}.1`, type: '', weight: '10%'}]})} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg">+ Thêm tiêu chí</button></div>
-                                        <div className="space-y-4">
-                                            {syllabus.assessments.map((ass, idx) => (
-                                                <div key={idx} className="flex gap-4 items-center bg-slate-50 p-4 rounded-xl border group hover:border-blue-200 transition-colors">
-                                                    <input disabled={!canWrite} className="w-20 p-2 bg-white border rounded-lg text-xs font-bold text-center uppercase shadow-sm" value={ass.code} onChange={(e) => { const n = [...syllabus.assessments]; n[idx].code = e.target.value; setSyllabus({...syllabus, assessments: n}); }} />
-                                                    <input disabled={!canWrite} className="flex-1 p-2 bg-white border rounded-lg text-xs shadow-sm" placeholder="Hình thức đánh giá..." value={ass.type} onChange={(e) => { const n = [...syllabus.assessments]; n[idx].type = e.target.value; setSyllabus({...syllabus, assessments: n}); }} />
-                                                    <input disabled={!canWrite} className="w-24 p-2 bg-white border rounded-lg text-xs text-center font-bold text-blue-600 shadow-sm" value={ass.weight} onChange={(e) => { const n = [...syllabus.assessments]; n[idx].weight = e.target.value; setSyllabus({...syllabus, assessments: n}); }} />
-                                                    {canWrite && <button onClick={() => setSyllabus({...syllabus, assessments: syllabus.assessments.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 p-1 transition-all opacity-0 group-hover:opacity-100"><Icons.Trash /></button>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                <h2 className="text-2xl font-bold text-slate-800 mb-8 border-b pb-4">Nội dung đề cương</h2>
+                                <p className="text-slate-500 italic">Vui lòng đăng nhập với quyền Admin hoặc Editor để chỉnh sửa nội dung này.</p>
                             </div>
                         </div>
                     </main>

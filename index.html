@@ -204,6 +204,21 @@
                 setIsSaving(false);
             };
 
+            const handleDuplicate = () => {
+                if (!user) return alert("Vui lòng đăng nhập Gmail để nhân bản.");
+                if (!isAdmin && !isEditor) return alert("Bạn không có quyền thực hiện chức năng này.");
+                if (!syllabus.info.code) return alert("Học phần hiện tại chưa có thông tin để nhân bản.");
+
+                const duplicatedSyllabus = JSON.parse(JSON.stringify(syllabus));
+                duplicatedSyllabus.id = ''; 
+                duplicatedSyllabus.info.code = `${duplicatedSyllabus.info.code}-copy`;
+                duplicatedSyllabus.ownerUid = user.uid;
+                duplicatedSyllabus.ownerEmail = user.email;
+
+                setSyllabus(duplicatedSyllabus);
+                alert("Đã nhân bản thành công! Bạn hiện là chủ sở hữu bản sao này.");
+            };
+
             const exportWord = () => {
                 const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType } = window.docx;
                 const docObj = new Document({
@@ -243,7 +258,7 @@
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                             <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">SyllabusPro</h1>
-                            <button onClick={() => setSyllabus(initialSyllabus)} className="text-white/50 hover:text-white" title="Tạo mới"><Icons.Plus /></button>
+                            {/* Nút dấu + cũ đã được gỡ bỏ */}
                         </div>
                         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
                             <div className="flex flex-col gap-1 mb-6">
@@ -306,9 +321,13 @@
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => { const d = JSON.parse(JSON.stringify(syllabus)); d.info.code += "-copy"; d.id=""; setSyllabus(d); }} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200"><Icons.Copy /> Nhân bản</button>
-                                <button onClick={saveToCloud} disabled={isSaving || !canEditThis} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50"><Icons.Save /> {isSaving ? "Đang lưu..." : "Lưu Cloud"}</button>
-                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200"><Icons.FileText /> Xuất Word</button>
+                                {/* Nút Tạo mới màu vàng mới */}
+                                <button onClick={() => setSyllabus(initialSyllabus)} className="flex items-center gap-2 bg-amber-400 text-amber-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-500 shadow-lg shadow-amber-100 transition-all">
+                                    <Icons.Plus /> Tạo mới
+                                </button>
+                                <button onClick={handleDuplicate} disabled={!isAdmin && !isEditor} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-all"><Icons.Copy /> Nhân bản</button>
+                                <button onClick={saveToCloud} disabled={isSaving || !canEditThis} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 transition-all"><Icons.Save /> {isSaving ? "Đang lưu..." : "Lưu Cloud"}</button>
+                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all"><Icons.FileText /> Xuất Word</button>
                             </div>
                         </header>
 
@@ -462,7 +481,7 @@
 
                                 {activeTab === 'teaching' && (
                                     <div className="space-y-6 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. Kế hoạch dạy học chi tiết</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, teachingPlan: [...syllabus.teachingPlan, {title: '', instructor: '', student: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm hoạt động</button></div>
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. Kế hoạch dạy học chi tiết</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, teachingPlan: [...syllabus.teachingPlan, {title: '', instructor: '', student: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100 transition-all">+ Thêm hoạt động</button></div>
                                         {syllabus.teachingPlan.map((p, i) => (
                                             <div key={i} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 space-y-4 group shadow-sm hover:border-blue-200 transition-all">
                                                 <div className="flex justify-between items-center">
@@ -506,7 +525,7 @@
                                 {activeTab === 'regulations' && (
                                     <div className="space-y-4 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IX. Quy định của học phần</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Các quy định về thi cử, thái độ học tập..." />
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Các quy định về thi cử, thái độ học tập..." />
                                     </div>
                                 )}
 

@@ -44,8 +44,8 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         /* Cstyles cho Mục 5 */
-        .level-0 { font-weight: 700; color: #1e293b; background-color: #f8fafc; }
-        .table-input { width: 100%; text-align: center; background: transparent; border: none; outline: none; padding: 4px 0; font-size: 10px; }
+        .level-0 { font-weight: 700; color: #1e293b; background-color: #f8fafc; text-transform: uppercase; }
+        .table-input { width: 100%; text-align: center; background: transparent; border: none; outline: none; padding: 4px 0; font-size: 13px; }
         .table-input:focus { background: #eff6ff; }
         .table-input:disabled { color: #1e40af; font-weight: bold; background: #f1f5f9; cursor: not-allowed; }
         .sticky-footer { position: sticky; bottom: 0; background: #f1f5f9; z-index: 10; font-weight: bold; border-top: 2px solid #cbd5e1; }
@@ -102,7 +102,7 @@
             structure: [],
             teachingPlan: [],
             assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', criteria: 'Chuyên cần, kiến thức', weight: '10%', clo: 'HP1' }],
-            materials: '',
+            materials: { required: [''], reference: [''], equipment: '' },
             regulations: ''
         };
 
@@ -344,6 +344,16 @@
                 setSyllabus({ ...syllabus, structure: n });
             };
 
+            const getAvailableMaterials = () => {
+                const res = [];
+                const reqCount = (syllabus.materials?.required || []).length;
+                const refCount = (syllabus.materials?.reference || []).length;
+                for (let i = 1; i <= reqCount + refCount; i++) {
+                    res.push(`[${i}]`);
+                }
+                return res;
+            };
+
             if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500 animate-pulse">SyllabusPro đang khởi động...</div>;
 
             return (
@@ -583,16 +593,16 @@
                                         </div>
 
                                         <div className="overflow-visible border rounded-xl shadow-lg bg-white">
-                                            <table className="w-full text-[10px] text-left border-collapse font-times">
+                                            <table className="w-full text-[13px] text-left border-collapse font-times">
                                                 <thead className="bg-slate-50 font-bold border-b text-slate-600 sticky top-0 z-20">
                                                     <tr>
-                                                        <th className="p-2 border-r w-8 text-center" rowSpan="2">Mức</th>
+                                                        <th className="p-2 border-r w-10 text-center" rowSpan="2">Mức</th>
                                                         <th className="p-2 border-r w-12 text-center" rowSpan="2">STT</th>
                                                         <th className="p-2 border-r min-w-[150px]" rowSpan="2">Nội dung</th>
-                                                        <th className="p-2 border-r w-12 text-center" rowSpan="2">CĐR</th>
-                                                        <th className="p-2 border-r w-12 text-center" rowSpan="2">Số tiết</th>
+                                                        <th className="p-2 border-r w-16 text-center" rowSpan="2">CĐR</th>
+                                                        <th className="p-2 border-r w-14 text-center" rowSpan="2">Số tiết</th>
                                                         <th className="p-1 border-r text-center" colSpan="7">Phân bổ tiết học (LT, TL, THN, THĐ, BT, KT, ...)</th>
-                                                        <th className="p-2 border-r w-24 text-center" rowSpan="2">Học liệu</th>
+                                                        <th className="p-2 border-r w-32 text-center" rowSpan="2">Học liệu</th>
                                                         <th className="p-2 w-8" rowSpan="2"></th>
                                                     </tr>
                                                     <tr className="bg-slate-100/50">
@@ -608,8 +618,11 @@
                                                 <tbody>
                                                     {syllabus.structure.map((item, idx) => {
                                                         const isParent = hasChildren(idx);
+                                                        const isLesson = item.level === 0;
+                                                        const isSection = item.level > 0;
+                                                        
                                                         return (
-                                                            <tr key={idx} className={`border-b hover:bg-slate-50 transition-all ${item.level === 0 ? 'level-0' : item.level === 1 ? 'bg-slate-50/50' : 'italic text-slate-500'}`}>
+                                                            <tr key={idx} className={`border-b hover:bg-slate-50 transition-all ${isLesson ? 'level-0' : item.level === 1 ? 'bg-slate-50/50' : 'italic text-slate-500'}`}>
                                                                 <td className="p-1 border-r text-center">
                                                                     <div className="flex flex-col gap-0.5">
                                                                         <button disabled={!canEditThis} onClick={() => changeLevel(idx, -1)} className="hover:text-blue-600 transition-colors"><Icons.ArrowLeft /></button>
@@ -624,11 +637,15 @@
                                                                 </td>
                                                                 <td className="p-1 border-r">
                                                                     <div className={`${item.level === 1 ? 'pl-4' : item.level === 2 ? 'pl-8' : ''}`}>
-                                                                        <input disabled={!canEditThis} className="w-full outline-none bg-transparent" value={item.title} onChange={e => updateStructureField(idx, 'title', e.target.value)} />
+                                                                        <input disabled={!canEditThis} className="w-full outline-none bg-transparent font-medium" value={item.title} onChange={e => updateStructureField(idx, 'title', e.target.value)} />
                                                                     </div>
                                                                 </td>
                                                                 <td className="p-1 border-r">
-                                                                    <input disabled={!canEditThis} className="table-input font-bold text-blue-600 uppercase" value={item.clo} onChange={e => updateStructureField(idx, 'clo', e.target.value)} />
+                                                                    {(!isSection || item.isTest) ? (
+                                                                        <input disabled={!canEditThis} className="table-input font-bold text-blue-600 uppercase" value={item.clo} onChange={e => updateStructureField(idx, 'clo', e.target.value)} />
+                                                                    ) : (
+                                                                        <div className="text-center text-slate-300">-</div>
+                                                                    )}
                                                                 </td>
                                                                 <td className="p-1 border-r text-center font-bold text-emerald-700 bg-emerald-50/30">
                                                                     {calculateRowTotal(idx)}
@@ -645,22 +662,27 @@
                                                                     </td>
                                                                 ))}
                                                                 <td className="p-1 border-r relative group/m">
-                                                                    {item.level === 0 && !item.isTest ? (
-                                                                        <div className="flex flex-wrap gap-0.5 min-h-[20px] cursor-pointer">
-                                                                            {item.material?.length > 0 ? item.material.map(m => <span key={m} className="bg-blue-100 text-blue-800 px-0.5 rounded text-[8px] font-mono">{m}</span>) : <span className="text-slate-300 italic">Chọn...</span>}
-                                                                            <div className="hidden group-hover/m:grid absolute right-0 bottom-full bg-white border shadow-2xl rounded-xl p-2 z-50 w-48 mb-2 grid-cols-5 gap-1">
-                                                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
-                                                                                    const m = `[${n}]`;
-                                                                                    return (
-                                                                                        <button key={m} onClick={() => {
-                                                                                            const cur = item.material || [];
-                                                                                            updateStructureField(idx, 'material', cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m].sort());
-                                                                                        }} className={`px-1 py-0.5 rounded text-[8px] font-bold border transition-all ${item.material?.includes(m) ? 'bg-blue-600 text-white' : 'bg-slate-50'}`}>{m}</button>
-                                                                                    );
-                                                                                })}
+                                                                    {isLesson && !item.isTest ? (
+                                                                        <div className="relative">
+                                                                            <div className="flex flex-wrap gap-0.5 min-h-[24px] p-1 rounded border border-transparent hover:border-blue-200 cursor-pointer bg-slate-50/50">
+                                                                                {item.material?.length > 0 ? (
+                                                                                    item.material.map(m => (
+                                                                                        <span key={m} className="bg-blue-600 text-white px-1 rounded text-[10px] font-bold">{m}</span>
+                                                                                    ))
+                                                                                ) : <span className="text-slate-400 italic text-[11px]">Chọn...</span>}
+                                                                            </div>
+                                                                            <div className="hidden group-hover/m:grid absolute right-0 bottom-full bg-white border border-slate-200 shadow-2xl rounded-xl p-2 z-50 w-56 mb-1 grid-cols-4 gap-1 animate-fade-in">
+                                                                                <p className="col-span-4 text-[9px] font-bold text-slate-400 uppercase mb-1 px-1">Tích chọn học liệu:</p>
+                                                                                {getAvailableMaterials().map(m => (
+                                                                                    <button key={m} onClick={() => {
+                                                                                        const cur = item.material || [];
+                                                                                        updateStructureField(idx, 'material', cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m].sort((a,b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/))));
+                                                                                    }} className={`px-1 py-1 rounded text-[11px] font-bold border transition-all ${item.material?.includes(m) ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-blue-50'}`}>{m}</button>
+                                                                                ))}
+                                                                                {getAvailableMaterials().length === 0 && <p className="col-span-4 text-[10px] italic text-red-400 p-2">Vui lòng nhập danh mục tài liệu ở Mục VIII trước.</p>}
                                                                             </div>
                                                                         </div>
-                                                                    ) : <span className="text-slate-300">-</span>}
+                                                                    ) : <span className="text-slate-300 block text-center">-</span>}
                                                                 </td>
                                                                 <td className="p-1 text-center">
                                                                     {canEditThis && <button onClick={() => setSyllabus({...syllabus, structure: syllabus.structure.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>}
@@ -669,16 +691,17 @@
                                                         );
                                                     })}
                                                 </tbody>
-                                                <tfoot className="sticky-footer text-[9px] uppercase">
-                                                    <tr className="bg-slate-100">
-                                                        <td colSpan="4" className="p-2 text-right border-r font-bold">Tổng cộng (Tính theo Bài):</td>
-                                                        <td className="p-2 text-center border-r text-emerald-800 font-black">{calculateGrandTotal('total')}</td>
-                                                        {['lt','tl','thn','thd','bt','kt','extra'].map(f => <td key={f} className="p-2 text-center border-r font-bold">{calculateGrandTotal(f)}</td>)}
-                                                        <td colSpan="2" className="p-2"></td>
+                                                <tfoot className="sticky-footer text-[11px] uppercase">
+                                                    <tr className="bg-slate-100/80">
+                                                        <td colSpan="4" className="p-3 text-right border-r font-black text-slate-700">TỔNG CỘNG HỌC PHẦN (Tính theo Bài):</td>
+                                                        <td className="p-3 text-center border-r text-emerald-800 font-black text-base">{calculateGrandTotal('total')}</td>
+                                                        {['lt','tl','thn','thd','bt','kt','extra'].map(f => <td key={f} className="p-3 text-center border-r font-black text-slate-800">{calculateGrandTotal(f)}</td>)}
+                                                        <td colSpan="2" className="p-3"></td>
                                                     </tr>
                                                 </tfoot>
                                             </table>
                                         </div>
+                                        <p className="text-[11px] text-slate-400 italic px-2">* Lưu ý: Các ô Số tiết của Bài/Mục sẽ tự động cộng dồn từ cấp con bên dưới. Chỉ nhập trực tiếp vào hàng không có phân cấp nhỏ hơn.</p>
                                     </div>
                                 )}
 
@@ -719,9 +742,28 @@
                                 )}
 
                                 {activeTab === 'materials' && (
-                                    <div className="space-y-4 animate-fade-in">
+                                    <div className="space-y-10 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VIII. Cơ sở vật chất, học liệu</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} placeholder="Giáo trình, tài liệu tham khảo..." />
+                                        <section className="space-y-4">
+                                            <div className="flex justify-between items-center"><h4 className="text-sm font-bold text-slate-700 uppercase">1. Học liệu bắt buộc</h4>{canEditThis && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, required: [...syllabus.materials.required, '']}})} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100 transition-all">+ Thêm tài liệu</button>}</div>
+                                            <div className="space-y-2">
+                                                {(syllabus.materials?.required || []).map((mat, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-start animate-fade-in"><span className="w-10 pt-2 text-center font-bold text-slate-400">[{idx + 1}]</span><textarea disabled={!canEditThis} className="flex-1 p-2 border rounded-xl bg-slate-50 focus:bg-white outline-none font-times text-sm transition-all" rows="1" value={mat} onChange={e => { const n=[...syllabus.materials.required]; n[idx]=e.target.value; setSyllabus({...syllabus, materials: {...syllabus.materials, required: n}})}} />{canEditThis && syllabus.materials.required.length > 1 && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, required: syllabus.materials.required.filter((_, i) => i !== idx)}})} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>}</div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                        <section className="space-y-4">
+                                            <div className="flex justify-between items-center"><h4 className="text-sm font-bold text-slate-700 uppercase">2. Học liệu tham khảo</h4>{canEditThis && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, reference: [...syllabus.materials.reference, '']}})} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100 transition-all">+ Thêm tài liệu</button>}</div>
+                                            <div className="space-y-2">
+                                                {(syllabus.materials?.reference || []).map((mat, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-start animate-fade-in"><span className="w-10 pt-2 text-center font-bold text-slate-400">[{syllabus.materials.required.length + idx + 1}]</span><textarea disabled={!canEditThis} className="flex-1 p-2 border rounded-xl bg-slate-50 focus:bg-white outline-none font-times text-sm transition-all" rows="1" value={mat} onChange={e => { const n=[...syllabus.materials.reference]; n[idx]=e.target.value; setSyllabus({...syllabus, materials: {...syllabus.materials, reference: n}})}} />{canEditThis && syllabus.materials.reference.length > 0 && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, reference: syllabus.materials.reference.filter((_, i) => i !== idx)}})} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>}</div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                        <section className="space-y-4">
+                                            <h4 className="text-sm font-bold text-slate-700 uppercase">3. Cơ sở vật chất phục vụ dạy học</h4>
+                                            <textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl outline-none text-sm shadow-inner italic bg-slate-50 font-times focus:ring-1 focus:ring-blue-400" value={syllabus.materials?.equipment} onChange={e => setSyllabus({...syllabus, materials: {...syllabus.materials, equipment: e.target.value}})} placeholder="Các trang thiết bị chuyên dụng, phòng thí nghiệm..." />
+                                        </section>
                                     </div>
                                 )}
 

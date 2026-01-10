@@ -240,11 +240,20 @@
             };
 
             const exportWord = async () => {
-                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, PageOrientation } = window.docx;
+                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } = window.docx;
+
+                // Cấu hình định dạng chuẩn (Font 14, Justified, Line spacing single, Spacing before/after 6pt)
+                const STYLES = {
+                    font: "Times New Roman",
+                    size: 28, // docx uses half-points (14pt * 2)
+                    alignment: AlignmentType.JUSTIFIED,
+                    spacing: { before: 120, after: 120, line: 240 }, // twips (6pt = 120 twips)
+                    indent: { firstLine: 567 } // 1cm = ~567 twips
+                };
 
                 const createCell = (text, options = {}) => new TableCell({
                     children: [new Paragraph({ 
-                        children: [new TextRun({ text: text || "", bold: options.bold, size: options.size || 24, font: "Times New Roman" })],
+                        children: [new TextRun({ text: text || "", bold: options.bold, size: STYLES.size, font: STYLES.font })],
                         alignment: options.alignment || AlignmentType.CENTER
                     })],
                     verticalAlign: VerticalAlign.CENTER,
@@ -259,23 +268,23 @@
                 sections.push(
                     new Paragraph({
                         children: [
-                            new TextRun({ text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", bold: true, size: 24, font: "Times New Roman" }),
-                            new TextRun({ text: "\t\t\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: "Times New Roman" })
+                            new TextRun({ text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", bold: true, size: 24, font: STYLES.font }),
+                            new TextRun({ text: "\t\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: STYLES.font })
                         ],
                     }),
                     new Paragraph({
                         children: [
-                            new TextRun({ text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", bold: true, size: 24, font: "Times New Roman" }),
-                            new TextRun({ text: "\t\t\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: "Times New Roman" })
+                            new TextRun({ text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", bold: true, size: 24, font: STYLES.font }),
+                            new TextRun({ text: "\t\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: STYLES.font })
                         ],
                     }),
                     new Paragraph({ text: "", spacing: { before: 400 } }),
                     new Paragraph({
-                        children: [new TextRun({ text: "ĐỀ CƯƠNG CHI TIẾT HỌC PHẦN", bold: true, size: 32, font: "Times New Roman" })],
+                        children: [new TextRun({ text: "ĐỀ CƯƠNG CHI TIẾT HỌC PHẦN", bold: true, size: 32, font: STYLES.font })],
                         alignment: AlignmentType.CENTER,
                     }),
                     new Paragraph({
-                        children: [new TextRun({ text: `Học phần: ${syllabus.info?.name?.toUpperCase() || "..."}`, bold: true, size: 28, font: "Times New Roman" })],
+                        children: [new TextRun({ text: `Học phần: ${syllabus.info?.name?.toUpperCase() || "..."}`, bold: true, size: 28, font: STYLES.font })],
                         alignment: AlignmentType.CENTER,
                     }),
                     new Paragraph({ text: "", spacing: { before: 400 } })
@@ -283,26 +292,46 @@
 
                 // Section 1
                 sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG", bold: true, size: 28, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: `- Tên học phần: ${syllabus.info.name}`, size: 24, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: `- Mã học phần: ${syllabus.info.code}`, size: 24, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: `- Số tín chỉ: ${syllabus.info.credits.total} (Lý thuyết: ${syllabus.info.credits.theory}, Thực hành: ${syllabus.info.credits.practice}, Thực tập: ${syllabus.info.credits.internship})`, size: 24, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: `- Chuyên ngành: ${syllabus.info.major}`, size: 24, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: `- Học phần trước: ${syllabus.info.prerequisites || "Không"}`, size: 24, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: `- Khoa phụ trách: ${syllabus.info.contact}`, size: 24, font: "Times New Roman" })] }),
+                    new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG", bold: true, size: STYLES.size, font: STYLES.font })] }),
+                    new Paragraph({ children: [new TextRun({ text: `- Tên học phần: ${syllabus.info.name}`, size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing }),
+                    new Paragraph({ children: [new TextRun({ text: `- Mã học phần: ${syllabus.info.code}`, size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing }),
+                    new Paragraph({ children: [new TextRun({ text: `- Số tín chỉ: ${syllabus.info.credits.total} (Lý thuyết: ${syllabus.info.credits.theory}, Thực hành: ${syllabus.info.credits.practice}, Thực tập: ${syllabus.info.credits.internship})`, size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing }),
+                    new Paragraph({ children: [new TextRun({ text: `- Chuyên ngành: ${syllabus.info.major}`, size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing }),
+                    new Paragraph({ children: [new TextRun({ text: `- Học phần trước: ${syllabus.info.prerequisites || "Không"}`, size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing }),
+                    new Paragraph({ children: [new TextRun({ text: `- Khoa phụ trách: ${syllabus.info.contact}`, size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing }),
+                    
+                    // Thêm placeholder cho hình ảnh học phần
+                    new Paragraph({ text: "", spacing: { before: 200 } }),
+                    new Table({
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        rows: [
+                            new TableRow({
+                                children: [
+                                    new TableCell({
+                                        children: [
+                                            new Paragraph({ text: "", spacing: { before: 1500 } }),
+                                            new Paragraph({ text: "[Hình ảnh minh họa học phần]", alignment: AlignmentType.CENTER, children: [new TextRun({ font: STYLES.font, italic: true, size: 24 })] }),
+                                            new Paragraph({ text: "", spacing: { before: 1500 } })
+                                        ],
+                                        borders: { top: { style: BorderStyle.DASHED }, bottom: { style: BorderStyle.DASHED }, left: { style: BorderStyle.DASHED }, right: { style: BorderStyle.DASHED } }
+                                    })
+                                ]
+                            })
+                        ]
+                    }),
                     new Paragraph({ text: "" })
                 );
 
                 // Section 2
                 sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU HỌC PHẦN", bold: true, size: 28, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: syllabus.objectives || "Chưa nhập thông tin.", size: 24, font: "Times New Roman" })] }),
+                    new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+                    new Paragraph({ children: [new TextRun({ text: syllabus.objectives || "Chưa nhập thông tin.", size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing, indent: STYLES.indent }),
                     new Paragraph({ text: "" })
                 );
 
                 // Section 3
                 sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA (CLO)", bold: true, size: 28, font: "Times New Roman" })] }),
+                    new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA (CLO)", bold: true, size: STYLES.size, font: STYLES.font })] }),
                     new Table({
                         width: { size: 100, type: WidthType.PERCENTAGE },
                         rows: [
@@ -320,19 +349,44 @@
                             }))
                         ]
                     }),
+                    new Paragraph({ text: "", spacing: { before: 200 } }),
+                    new Paragraph({ children: [new TextRun({ text: "Ma trận đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:", italic: true, size: STYLES.size, font: STYLES.font })] }),
+                    new Table({
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        rows: [
+                            new TableRow({
+                                children: [
+                                    createCell("CLO", { bold: true }),
+                                    ...syllabus.cloMatrix.plos.map(p => createCell(p, { bold: true }))
+                                ]
+                            }),
+                            ...syllabus.clos.map(c => new TableRow({
+                                children: [
+                                    createCell(c.id, { bold: true }),
+                                    ...syllabus.cloMatrix.plos.map(p => createCell(syllabus.cloMatrix.mapping[c.id]?.[p] || "-"))
+                                ]
+                            })),
+                            new TableRow({
+                                children: [
+                                    createCell("Môn học", { bold: true }),
+                                    ...syllabus.cloMatrix.plos.map(p => createCell(calculatePloSummary(p), { bold: true }))
+                                ]
+                            })
+                        ]
+                    }),
                     new Paragraph({ text: "" })
                 );
 
                 // Section 4
                 sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "IV. MÔ TẢ HỌC PHẦN", bold: true, size: 28, font: "Times New Roman" })] }),
-                    new Paragraph({ children: [new TextRun({ text: syllabus.description || "Chưa nhập thông tin.", size: 24, font: "Times New Roman" })] }),
+                    new Paragraph({ children: [new TextRun({ text: "IV. MÔ TẢ HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+                    new Paragraph({ children: [new TextRun({ text: syllabus.description || "Chưa nhập thông tin.", size: STYLES.size, font: STYLES.font })], alignment: STYLES.alignment, spacing: STYLES.spacing, indent: STYLES.indent }),
                     new Paragraph({ text: "" })
                 );
 
                 // Section 5
                 sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true, size: 28, font: "Times New Roman" })] }),
+                    new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
                     new Table({
                         width: { size: 100, type: WidthType.PERCENTAGE },
                         rows: [
@@ -367,10 +421,15 @@
                 );
 
                 // Section 6, 7, 8, 9
-                const addSection = (title, content) => {
+                const addSection = (title, content, isList = false) => {
                     sections.push(
-                        new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 28, font: "Times New Roman" })] }),
-                        new Paragraph({ children: [new TextRun({ text: content || "Chưa nhập thông tin.", size: 24, font: "Times New Roman" })] }),
+                        new Paragraph({ children: [new TextRun({ text: title, bold: true, size: STYLES.size, font: STYLES.font })] }),
+                        new Paragraph({ 
+                            children: [new TextRun({ text: content || "Chưa nhập thông tin.", size: STYLES.size, font: STYLES.font })], 
+                            alignment: STYLES.alignment, 
+                            spacing: STYLES.spacing, 
+                            indent: STYLES.indent 
+                        }),
                         new Paragraph({ text: "" })
                     );
                 };
@@ -383,7 +442,7 @@
                 
                 addSection("IX. QUY ĐỊNH CỦA HỌC PHẦN", syllabus.regulations);
 
-                // Signature block
+                // Signature block - Chỉ giữ lại Chủ nhiệm khoa và Trưởng bộ môn
                 sections.push(
                     new Paragraph({ text: "", spacing: { before: 800 } }),
                     new Table({
@@ -392,9 +451,14 @@
                         rows: [
                             new TableRow({
                                 children: [
-                                    createCell("PHÊ DUYỆT CỦA KHOA", { bold: true, alignment: AlignmentType.CENTER }),
-                                    createCell("TRƯỞNG BỘ MÔN", { bold: true, alignment: AlignmentType.CENTER }),
-                                    createCell(`${syllabus.header?.city || "Tp. Hồ Chí Minh"}, ngày... tháng... năm...\nNGƯỜI LẬP`, { bold: true, alignment: AlignmentType.CENTER })
+                                    createCell("CHỦ NHIỆM KHOA", { bold: true, alignment: AlignmentType.CENTER }),
+                                    createCell(`${syllabus.header?.city || "Tp. Hồ Chí Minh"}, ngày... tháng... năm...\nTRƯỞNG BỘ MÔN`, { bold: true, alignment: AlignmentType.CENTER })
+                                ]
+                            }),
+                            new TableRow({
+                                children: [
+                                    new TableCell({ children: [new Paragraph({ text: "", spacing: { before: 1500 } })] }),
+                                    new TableCell({ children: [new Paragraph({ text: "", spacing: { before: 1500 } })] })
                                 ]
                             })
                         ]

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Soạn thảo Đề cương Học phần - SQKT</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Thư viện xử lý Excel & Word -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/docx@8.2.2/build/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.fb = { initializeApp, getApps, getApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc };
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @media print { .no-print { display: none; } }
+        
+        .save-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .font-times { font-family: "Times New Roman", Times, serif; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Icons = {
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            Target: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            Layers: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            ListChecks: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>,
+            BookOpen: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>,
+            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+            Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
+            Excel: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="9" x2="9" y1="3" y2="21"/><line x1="15" x2="15" y1="3" y2="21"/></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            Magic: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.21 1.21 0 0 0 1.72 0L21.64 5.36a1.21 1.21 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+        };
+
+        const initialSyllabus = {
+            id: '',
+            header: { schoolName: 'TRƯỜNG SĨ QUAN KTQS', department: 'KHOA CƠ KHÍ', subject: 'BỘ MÔN CÔNG NGHỆ CHẾ TẠO', city: 'Thành phố Hồ Chí Minh', year: '2025' },
+            info: { name: '', code: '', major: '', type: 'Bắt buộc', prerequisites: 'Không', parallel: 'Không', contact: '', credits: { theory: 0, practice: 0, internship: 0, total: 0 }, hours: { total: 0, theory: 0, practice: 0, internship: 0, exam: 0, selfStudy: 0 } },
+            objectives: '', clos: [], structure: [], assessments: [], materials: '1. Học liệu bắt buộc:\n2. Học liệu tham khảo:', regulations: 'Học viên vắng mặt không đủ số tiết lên lớp theo quy định sẽ không được phép dự thi kết thúc học phần./.'
+        };
+
+        const sampleSyllabus = {
+            id: 'sample-cnc',
+            header: { schoolName: 'TRƯỜNG SĨ QUAN KTQS', department: 'KHOA CƠ KHÍ', subject: 'BỘ MÔN CƠ KHÍ CHẾ TẠO', city: 'Thành phố Hồ Chí Minh', year: '2025' },
+            info: { name: 'Công nghệ gia công CNC', code: 'CNC2025', major: 'Kỹ thuật Cơ khí', type: 'Bắt buộc', prerequisites: 'Cơ sở thiết kế máy', parallel: 'Không', contact: 'Bộ môn CNC - Khoa Cơ khí. SĐT: 028.3894.xxxx', credits: { theory: 2, practice: 1, internship: 0, total: 3 }, hours: { total: 62, theory: 30, practice: 30, internship: 0, exam: 2, selfStudy: 90 } },
+            objectives: 'Học viên nắm vững quy trình vận hành máy phay/tiện CNC, lập trình được các biên dạng gia công cơ bản và nâng cao.',
+            clos: [{ id: 'HP1', content: 'Vận dụng kiến thức về lập trình G-code để gia công chi tiết.' }, { id: 'HP2', content: 'Vận hành thành thạo máy phay CNC 3 trục.' }],
+            structure: [{ stt: 1, title: 'Bài 1: Tổng quan về máy CNC', clo: 'HP1', total: 6, lt: 4, th: 2, material: '[1] Chương 1' }, { stt: 2, title: 'Bài 2: Hệ tọa độ và lệnh cơ bản', clo: 'HP1', total: 8, lt: 4, th: 4, material: '[1] Chương 2' }, { stt: 3, title: 'Bài 3: Lập trình chu trình gia công', clo: 'HP1, HP2', total: 10, lt: 4, th: 6, material: '[1] Chương 3' }],
+            assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', weight: '10%' }, { code: 'A2.1', type: 'Giữa kỳ', method: 'Thực hành', weight: '30%' }, { code: 'A3.1', type: 'Kết thúc', method: 'Tự luận', weight: '60%' }],
+            materials: '1. Học liệu bắt buộc: Nguyễn Văn A (2024). Giáo trình CNC nâng cao. NXB Quân Đội.\n2. Học liệu tham khảo: Fanuc Manual 2023.',
+            regulations: 'Học viên phải tham gia ít nhất 80% số tiết lên lớp. Điểm thực hành dưới 5.0 không được dự thi kết thúc.'
+        };
+
+        function App() {
+            const [syllabus, setSyllabus] = useState(initialSyllabus);
+            const [savedSyllabi, setSavedSyllabi] = useState([]);
+            const [activeTab, setActiveTab] = useState('info');
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [isSaving, setIsSaving] = useState(false);
+            const [cloudAvailable, setCloudAvailable] = useState(false);
+            
+            // Firebase References
+            const fbAppRef = useRef(null);
+            const fbDbRef = useRef(null);
+            const fbAuthRef = useRef(null);
+
+            const [fbConfig, setFbConfig] = useState({
+                apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: ""
+            });
+
+            useEffect(() => {
+                const savedConfig = localStorage.getItem('syllabus_fb_config');
+                if (savedConfig) setFbConfig(JSON.parse(savedConfig));
+            }, []);
+
+            // Start Firebase One-time
+            useEffect(() => {
+                const initFirebase = async () => {
+                    let config = null;
+                    if (typeof __firebase_config !== 'undefined' && __firebase_config) config = JSON.parse(__firebase_config);
+                    else if (fbConfig.apiKey && fbConfig.projectId) config = fbConfig;
+
+                    if (!config) {
+                        setLoading(false);
+                        setCloudAvailable(false);
+                        return;
+                    }
+
+                    try {
+                        const { initializeApp, getApps, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.fb;
+                        
+                        // Prevent re-initialization error
+                        if (!fbAppRef.current) {
+                            fbAppRef.current = getApps().length > 0 ? getApps()[0] : initializeApp(config);
+                            fbDbRef.current = getFirestore(fbAppRef.current);
+                            fbAuthRef.current = getAuth(fbAppRef.current);
+                        }
+
+                        const initAuth = async () => {
+                            try {
+                                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                    await signInWithCustomToken(fbAuthRef.current, __initial_auth_token);
+                                } else {
+                                    await signInAnonymously(fbAuthRef.current);
+                                }
+                            } catch (authErr) {
+                                console.error("Lỗi xác thực Firebase (Kiểm tra xem đã bật Anonymous Auth chưa?):", authErr);
+                            }
+                        };
+                        
+                        await initAuth();
+
+                        const unsubscribe = onAuthStateChanged(fbAuthRef.current, (u) => {
+                            setUser(u);
+                            setCloudAvailable(!!u);
+                            setLoading(false);
+                        });
+                        return () => unsubscribe();
+                    } catch (e) {
+                        console.error("Firebase Init Error:", e);
+                        setLoading(false);
+                    }
+                };
+                initFirebase();
+            }, [fbConfig]);
+
+            // Sync List from Cloud
+            useEffect(() => {
+                if (!user || !cloudAvailable || !fbDbRef.current) return;
+                const { collection, onSnapshot } = window.fb;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                const q = collection(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi');
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setSavedSyllabi(list);
+                }, (err) => {
+                    console.error("Snapshot error (Kiểm tra Rules của Firestore):", err);
+                    setCloudAvailable(false);
+                });
+                
+                return () => unsubscribe();
+            }, [user, cloudAvailable]);
+
+            // Handlers
+            const saveToCloud = async () => {
+                if (!cloudAvailable || !fbDbRef.current) return alert("Vui lòng cấu hình Firebase trong tab Cài đặt & Bật Anonymous Auth.");
+                setIsSaving(true);
+                const { doc, setDoc } = window.fb;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                const docId = syllabus.id || syllabus.info.code || ("syllabus-" + Date.now());
+                const updatedSyllabus = { ...syllabus, id: docId, updatedAt: new Date().toISOString() };
+
+                try {
+                    await setDoc(doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', docId), updatedSyllabus);
+                    setSyllabus(updatedSyllabus);
+                    setIsSaving(false);
+                    alert("Đã lưu dữ liệu lên Cloud thành công!");
+                } catch (e) {
+                    setIsSaving(false);
+                    console.error("Lỗi lưu:", e);
+                    alert("Lỗi lưu Cloud: " + e.message);
+                }
+            };
+
+            const loadSampleData = () => {
+                if(window.confirm("Ghi đè bằng dữ liệu mẫu?")) {
+                    setSyllabus({ ...sampleSyllabus, id: "sample-" + Date.now() });
+                    setActiveTab('info');
+                }
+            };
+
+            const handleCreditChange = (type, value) => {
+                const val = parseInt(value) || 0;
+                setSyllabus(prev => {
+                    const newCredits = { ...prev.info.credits, [type]: val };
+                    newCredits.total = newCredits.theory + newCredits.practice + newCredits.internship;
+                    const newHours = { ...prev.info.hours };
+                    newHours.theory = newCredits.theory * 15;
+                    newHours.practice = newCredits.practice * 30;
+                    newHours.internship = newCredits.internship * 45;
+                    newHours.total = newHours.theory + newHours.practice + newHours.internship + newHours.exam;
+                    return { ...prev, info: { ...prev.info, credits: newCredits, hours: newHours } };
+                });
+            };
+
+            const handleInputChange = (section, field, value) => {
+                setSyllabus(prev => ({ ...prev, [section]: typeof field === 'string' ? { ...prev[section], [field]: value } : value }));
+            };
+
+            const updateRow = (section, index, field, value) => {
+                setSyllabus(prev => {
+                    const newList = [...prev[section]];
+                    newList[index] = { ...newList[index], [field]: value };
+                    return { ...prev, [section]: newList };
+                });
+            };
+
+            const addRow = (section) => {
+                const newRow = section === 'clos' ? { id: `HP${syllabus.clos.length + 1}`, content: '' } :
+                               section === 'structure' ? { stt: syllabus.structure.length + 1, title: '', clo: '', total: 0, lt: 0, th: 0, material: '' } :
+                               { code: '', type: '', method: '', weight: '' };
+                setSyllabus(prev => ({ ...prev, [section]: [...prev[section], newRow] }));
+            };
+
+            const exportWord = () => {
+                const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel, BorderStyle, VerticalAlign } = window.docx;
+                const classHoursTotal = syllabus.info.hours.theory + syllabus.info.hours.practice + syllabus.info.hours.internship;
+                const doc = new Document({
+                    styles: { default: { document: { run: { font: "Times New Roman", size: 26 } } } },
+                    sections: [{
+                        children: [
+                            new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: BorderStyle.NONE, rows: [ new TableRow({ children: [
+                                new TableCell({ children: [new Paragraph({ text: syllabus.header.schoolName, bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: syllabus.header.department, bold: true, alignment: AlignmentType.CENTER })] }),
+                                new TableCell({ children: [new Paragraph({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: "Độc lập – Tự do – Hạnh phúc", bold: true, alignment: AlignmentType.CENTER }), new Paragraph({ text: `${syllabus.header.city}, ngày ... tháng ... năm ${syllabus.header.year}`, italics: true, alignment: AlignmentType.CENTER })] }),
+                            ]})]}) ,
+                            new Paragraph({ text: "ĐỀ CƯƠNG HỌC PHẦN", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, bold: true, spacing: { before: 400, after: 400 } }),
+                            new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG", bold: true })] }),
+                            new Paragraph({ text: `Học phần: ${syllabus.info.name}` }),
+                            new Paragraph({ text: `Mã học phần: ${syllabus.info.code}` }),
+                            new Paragraph({ text: `Số tín chỉ: ${syllabus.info.credits.total}` }),
+                            new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU", bold: true })], spacing: { before: 200 } }),
+                            new Paragraph({ text: syllabus.objectives }),
+                            new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA", bold: true })], spacing: { before: 200 } }),
+                            ...syllabus.clos.map(clo => new Paragraph({ text: `${clo.id}: ${clo.content}`, bullet: { level: 0 } })),
+                            new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true })], spacing: { before: 200 } }),
+                            new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [
+                                new TableRow({ children: ["STT", "Nội dung", "CĐR", "Tổng", "LT", "TH", "Học liệu"].map(h => new TableCell({ children: [new Paragraph({ text: h, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: "F2F2F2" }})) }),
+                                ...syllabus.structure.map(row => new TableRow({ children: [row.stt, row.title, row.clo, row.total, row.lt, row.th, row.material].map(v => new TableCell({ children: [new Paragraph({ text: String(v) })] })) }))
+                            ]}),
+                            new Paragraph({ children: [new TextRun({ text: "VIII. HỌC LIỆU", bold: true })], spacing: { before: 200 } }),
+                            new Paragraph({ text: syllabus.materials }),
+                            new Paragraph({ children: [new TextRun({ text: "IX. QUY ĐỊNH", bold: true })], spacing: { before: 200 } }),
+                            new Paragraph({ text: syllabus.regulations }),
+                        ]
+                    }]
+                });
+                window.docx.Packer.toBlob(doc).then(blob => { window.saveAs(blob, `De_cuong_${syllabus.info.code || 'mon_hoc'}.docx`); });
+            };
+
+            const exportExcel = () => {
+                if (!window.XLSX) return;
+                const wb = XLSX.utils.book_new();
+                const infoData = [["MỤC", "GIÁ TRỊ"], ["Tên", syllabus.info.name], ["Mã", syllabus.info.code], ["Tổng TC", syllabus.info.credits.total]];
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(infoData), "Thong tin chung");
+                const structureData = syllabus.structure.map(r => ({"STT": r.stt, "Nội dung": r.title, "LT": r.lt, "TH": r.th}));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(structureData), "Noi dung");
+                XLSX.writeFile(wb, `Export_${syllabus.info.code}.xlsx`);
+            };
+
+            const deleteSyllabus = async (id, e) => {
+                e.stopPropagation();
+                if (!window.confirm("Xóa vĩnh viễn học phần này?")) return;
+                const { doc, deleteDoc } = window.fb;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                await deleteDoc(doc(fbDbRef.current, 'artifacts', appId, 'public', 'data', 'syllabi', id));
+                if (syllabus.id === id) setSyllabus(initialSyllabus);
+            };
+
+            return (
+                <div className="flex h-screen overflow-hidden bg-slate-100 font-inter">
+                    <aside className="w-72 bg-slate-900 text-white flex flex-col shrink-0 no-print">
+                        <div className="p-6 border-b border-slate-800">
+                            <div className="flex items-center gap-2 mb-6 text-blue-400">
+                                <Icons.BookOpen />
+                                <h1 className="font-bold text-lg text-white tracking-tighter">SyllabusPro</h1>
+                            </div>
+                            <button onClick={() => setSyllabus(initialSyllabus)} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all mb-3">
+                                <Icons.Plus /> Tạo mới
+                            </button>
+                            <button onClick={loadSampleData} className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg">
+                                <Icons.Magic /> Dùng dữ liệu mẫu
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2 bg-slate-900/50">
+                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">Học phần đã lưu</h3>
+                            {cloudAvailable ? savedSyllabi.map(item => (
+                                <div key={item.id} onClick={() => setSyllabus(item)} className={`group relative p-3 rounded-xl cursor-pointer transition-all border ${syllabus.id === item.id ? 'bg-slate-800 border-blue-500/50' : 'border-transparent hover:bg-slate-800/50'}`}>
+                                    <div className="pr-6">
+                                        <p className="text-xs font-bold truncate text-slate-200">{item.info.name || "Chưa đặt tên"}</p>
+                                        <p className="text-[10px] text-slate-500">{item.info.code || "---"}</p>
+                                    </div>
+                                    <button onClick={(e) => deleteSyllabus(item.id, e)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+                                        <Icons.Trash />
+                                    </button>
+                                </div>
+                            )) : <p className="text-[10px] text-slate-500 italic p-2 leading-relaxed">Cần cấu hình Firebase và bật Anonymous Auth để dùng Cloud.</p>}
+                        </div>
+                        <div className="p-6 border-t border-slate-800 space-y-3 bg-slate-900">
+                            <button onClick={saveToCloud} disabled={isSaving || !cloudAvailable} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all shadow-lg ${!cloudAvailable ? 'bg-slate-700 opacity-50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                                <Icons.Save /> {isSaving ? 'Đang lưu...' : 'Lưu Cloud'}
+                            </button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={exportWord} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-bold text-xs transition-all shadow-lg">
+                                    <Icons.FileText /> Word
+                                </button>
+                                <button onClick={exportExcel} className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 py-3 rounded-xl font-bold text-xs transition-all shadow-lg">
+                                    <Icons.Excel /> Excel
+                                </button>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <main className="flex-1 flex flex-col overflow-hidden">
+                        <header className="bg-white border-b px-8 py-4 flex justify-between items-center shrink-0 shadow-sm no-print">
+                            <nav className="flex gap-8">
+                                {[
+                                    { id: 'info', label: 'Thông tin chung', icon: Icons.Info },
+                                    { id: 'objectives', label: 'Mục tiêu & CĐR', icon: Icons.Target },
+                                    { id: 'structure', label: 'Cấu trúc bài', icon: Icons.Layers },
+                                    { id: 'assessment', label: 'Đánh giá', icon: Icons.ListChecks },
+                                    { id: 'others', label: 'Học liệu & Quy định', icon: Icons.BookOpen },
+                                    { id: 'settings', label: 'Cài đặt mẫu', icon: Icons.Settings }
+                                ].map(tab => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                            className={`flex items-center gap-2 text-sm font-bold pb-2 transition-all border-b-2 capitalize ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                                        <tab.icon /> {tab.label}
+                                    </button>
+                                ))}
+                            </nav>
+                            <div className="flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full ${cloudAvailable ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">
+                                    {cloudAvailable ? 'Cloud Connected' : 'Local Mode'}
+                                </span>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar font-times">
+                            <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 p-12 min-h-full">
+                                {activeTab === 'info' && (
+                                    <div className="space-y-8">
+                                        <h2 className="text-xl font-bold border-b pb-2 tracking-tight">I. THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN</h2>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label>
+                                                <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" value={syllabus.info.name} onChange={(e) => handleInputChange('info', 'name', e.target.value)} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label>
+                                                <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" value={syllabus.info.code} onChange={(e) => handleInputChange('info', 'code', e.target.value)} />
+                                            </div>
+                                        </div>
+                                        <div className="pt-4 border-t border-slate-100 grid grid-cols-4 gap-4 bg-slate-50 p-6 rounded-2xl">
+                                            {['theory', 'practice', 'internship'].map(t => (
+                                                <div key={t} className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase">TC {t}</label>
+                                                    <input type="number" className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none" value={syllabus.info.credits[t]} onChange={(e) => handleCreditChange(t, e.target.value)} />
+                                                </div>
+                                            ))}
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-blue-500 uppercase">Tổng Tín chỉ</label>
+                                                <div className="p-2 bg-blue-100 text-blue-700 font-bold rounded-xl text-center shadow-md">{syllabus.info.credits.total}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'objectives' && (
+                                    <div className="space-y-6">
+                                        <h2 className="text-xl font-bold border-b pb-2 tracking-tight">II. MỤC TIÊU & III. CHUẨN ĐẦU RA</h2>
+                                        <textarea rows="5" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none" value={syllabus.objectives} onChange={(e) => handleInputChange('objectives', null, e.target.value)} placeholder="Nhập mục tiêu học phần..." />
+                                        <div className="space-y-4 pt-4">
+                                            <div className="flex justify-between items-center"><label className="text-xs font-bold text-slate-400 uppercase">Chuẩn đầu ra (CĐR)</label>
+                                            <button onClick={() => addRow('clos')} className="text-xs text-blue-600 font-bold hover:underline">Thêm CĐR</button></div>
+                                            {syllabus.clos.map((clo, idx) => (
+                                                <div key={idx} className="flex gap-3 items-center bg-slate-50 p-3 rounded-xl border border-transparent hover:border-slate-200">
+                                                    <input className="w-16 p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-center" value={clo.id} onChange={(e) => updateRow('clos', idx, 'id', e.target.value)} />
+                                                    <textarea className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none" rows="1" value={clo.content} onChange={(e) => updateRow('clos', idx, 'content', e.target.value)} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'structure' && (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center"><h2 className="text-xl font-bold tracking-tight">V. CẤU TRÚC HỌC PHẦN</h2>
+                                        <button onClick={() => addRow('structure')} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">Thêm bài</button></div>
+                                        <div className="overflow-hidden border border-slate-200 rounded-2xl shadow-sm">
+                                            <table className="w-full text-xs">
+                                                <thead className="bg-slate-50 font-bold uppercase text-[10px] tracking-wider border-b">
+                                                    <tr><th className="px-4 py-4 w-12 text-center">STT</th><th className="px-4 py-4 text-left">Nội dung bài học</th><th className="px-4 py-4 w-16 text-center">LT</th><th className="px-4 py-4 w-16 text-center">TH</th><th className="px-2 py-4 w-10"></th></tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {syllabus.structure.map((row, idx) => (
+                                                        <tr key={idx} className="hover:bg-slate-50/50">
+                                                            <td className="px-2 py-3 text-center border-r"><input className="w-full text-center bg-transparent outline-none" value={row.stt} onChange={(e) => updateRow('structure', idx, 'stt', e.target.value)} /></td>
+                                                            <td className="px-4 py-3 border-r"><textarea className="w-full bg-transparent outline-none" rows="1" value={row.title} onChange={(e) => updateRow('structure', idx, 'title', e.target.value)} /></td>
+                                                            <td className="px-2 py-3 border-r text-center"><input className="w-full text-center bg-transparent outline-none" value={row.lt} onChange={(e) => updateRow('structure', idx, 'lt', e.target.value)} /></td>
+                                                            <td className="px-2 py-3 border-r text-center"><input className="w-full text-center bg-transparent outline-none" value={row.th} onChange={(e) => updateRow('structure', idx, 'th', e.target.value)} /></td>
+                                                            <td className="px-2 py-3 text-center"><button onClick={() => { setSyllabus({...syllabus, structure: syllabus.structure.filter((_, i) => i !== idx)}); }} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'assessment' && (
+                                    <div className="space-y-6">
+                                        <h2 className="text-xl font-bold border-b pb-2 tracking-tight">VII. ĐÁNH GIÁ KẾT QUẢ</h2>
+                                        <button onClick={() => addRow('assessments')} className="text-xs text-blue-600 font-bold">Thêm hình thức</button>
+                                        <div className="space-y-4">
+                                            {syllabus.assessments.map((ass, idx) => (
+                                                <div key={idx} className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 group shadow-sm">
+                                                    <div className="w-20"><label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Mã</label><input className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-center" value={ass.code} onChange={(e) => updateRow('assessments', idx, 'code', e.target.value)} /></div>
+                                                    <div className="flex-1 space-y-2">
+                                                        <label className="block text-[9px] font-bold text-slate-400 uppercase">Hình thức / Phương pháp</label>
+                                                        <div className="flex gap-2"><input className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs" value={ass.type} onChange={(e) => updateRow('assessments', idx, 'type', e.target.value)} /><input className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs" value={ass.method} onChange={(e) => updateRow('assessments', idx, 'method', e.target.value)} /></div>
+                                                    </div>
+                                                    <div className="w-20"><label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Trọng số</label><input className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-blue-600 text-center" value={ass.weight} onChange={(e) => updateRow('assessments', idx, 'weight', e.target.value)} /></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'others' && (
+                                    <div className="space-y-10">
+                                        <div className="space-y-2">
+                                            <h2 className="text-xl font-bold border-b pb-2 tracking-tight uppercase">VIII. CƠ SỞ VẬT CHẤT, HỌC LIỆU</h2>
+                                            <textarea rows="6" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none" value={syllabus.materials} onChange={(e) => setSyllabus({...syllabus, materials: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h2 className="text-xl font-bold border-b pb-2 tracking-tight uppercase">IX. QUY ĐỊNH CỦA HỌC PHẦN</h2>
+                                            <textarea rows="4" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none" value={syllabus.regulations} onChange={(e) => setSyllabus({...syllabus, regulations: e.target.value})} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'settings' && (
+                                    <div className="space-y-10 animate-in fade-in duration-500">
+                                        <section className="space-y-4">
+                                            <h2 className="text-xl font-bold border-b pb-2 uppercase tracking-tight">Cài đặt mẫu xuất file Word</h2>
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Tên trường</label><input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={syllabus.header.schoolName} onChange={(e) => handleInputChange('header', 'schoolName', e.target.value)} /></div>
+                                                <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Khoa / Phòng</label><input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={syllabus.header.department} onChange={(e) => handleInputChange('header', 'department', e.target.value)} /></div>
+                                                <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Địa danh</label><input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={syllabus.header.city} onChange={(e) => handleInputChange('header', 'city', e.target.value)} /></div>
+                                                <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Năm học</label><input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={syllabus.header.year} onChange={(e) => handleInputChange('header', 'year', e.target.value)} /></div>
+                                            </div>
+                                        </section>
+
+                                        <section className="space-y-4 pt-6 border-t border-slate-100">
+                                            <h2 className="text-xl font-bold border-b pb-2 uppercase tracking-tight text-blue-600">Cấu hình Cloud (Firebase)</h2>
+                                            <div className="bg-blue-50 p-4 rounded-xl text-blue-800 text-xs mb-4">
+                                                <p className="font-bold mb-1">⚠️ Lưu ý quan trọng:</p>
+                                                <ol className="list-decimal ml-4 space-y-1">
+                                                    <li>Bắt buộc bật <strong>Anonymous Auth</strong> trong Firebase Console > Authentication.</li>
+                                                    <li>Thiết lập Firestore ở <strong>Test Mode</strong> (hoặc cho phép read/write công khai).</li>
+                                                    <li>Đảm bảo các trường bên dưới không thừa khoảng trắng ở đầu/cuối.</li>
+                                                </ol>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {Object.keys(fbConfig).map(key => (
+                                                    <div key={key} className="space-y-1">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{key}</label>
+                                                        <input 
+                                                            className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-400" 
+                                                            value={fbConfig[key]} 
+                                                            onChange={(e) => setFbConfig({...fbConfig, [key]: e.target.value.trim()})} 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    localStorage.setItem('syllabus_fb_config', JSON.stringify(fbConfig));
+                                                    alert("Đã lưu cấu hình. Trang sẽ tải lại để áp dụng kết nối mới.");
+                                                    window.location.reload();
+                                                }}
+                                                className="bg-slate-800 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-slate-700 transition-all shadow-md"
+                                            >
+                                                Lưu & Kết nối Cloud
+                                            </button>
+                                        </section>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro V3.7 - Professional Info Section</title>
+    <title>SyllabusPro V3.8 - Matrix Update</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -165,7 +165,6 @@
             const isOwner = syllabus.ownerUid === user?.uid || syllabus.ownerUid === ''; 
             const canEditThis = isAdmin || (isEditor && isOwner);
 
-            // LOGIC TÍNH TOÁN TIẾT HỌC CHI TIẾT
             const handleCreditChange = (field, value) => {
                 const val = Math.max(0, parseFloat(value) || 0);
                 setSyllabus(prev => {
@@ -179,9 +178,9 @@
                     const newHours = { 
                         ...prev.info.hours,
                         theory: hTheory,
-                        practice: hPractice + hInternship, // Gộp thực hành và thực tập vào cột 2 theo mẫu
+                        practice: hPractice + hInternship,
                         classroom: hTheory + hPractice + hInternship,
-                        selfStudy: newCredits.total * 30 // Tiêu chuẩn 1 TC = 30 tiết tự học
+                        selfStudy: newCredits.total * 30 
                     };
                     
                     return { ...prev, info: { ...prev.info, credits: newCredits, hours: newHours } };
@@ -229,10 +228,6 @@
                             new Paragraph({ text: `Học phần: ${syllabus.info.name}` }),
                             new Paragraph({ text: `Mã học phần: ${syllabus.info.code}` }),
                             new Paragraph({ text: `Số tín chỉ: ${syllabus.info.credits.total}` }),
-                            new Paragraph({ text: `- Số tiết lên lớp: ${syllabus.info.hours.classroom}` }),
-                            new Paragraph({ text: `  + Lý thuyết: ${syllabus.info.hours.theory}` }),
-                            new Paragraph({ text: `  + Thực hành/Thực tập/Thảo luận: ${syllabus.info.hours.practice}` }),
-                            new Paragraph({ text: `- Số tiết tự học: ${syllabus.info.hours.selfStudy}` }),
                         ]
                     }]
                 });
@@ -258,7 +253,6 @@
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                             <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">SyllabusPro</h1>
-                            {/* Nút dấu + cũ đã được gỡ bỏ */}
                         </div>
                         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
                             <div className="flex flex-col gap-1 mb-6">
@@ -321,7 +315,6 @@
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                {/* Nút Tạo mới màu vàng mới */}
                                 <button onClick={() => setSyllabus(initialSyllabus)} className="flex items-center gap-2 bg-amber-400 text-amber-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-500 shadow-lg shadow-amber-100 transition-all">
                                     <Icons.Plus /> Tạo mới
                                 </button>
@@ -343,9 +336,8 @@
                                     <div className="space-y-8 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tight">I. Thông tin chung</h3>
                                         
-                                        {/* TEXT FIELDS GRID */}
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ Ô tô" /></div>
+                                            <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ Ô tô" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg uppercase font-mono bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="OTO301" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} placeholder="Kỹ thuật Ô tô" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200 outline-none" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
@@ -354,20 +346,17 @@
                                             <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bộ môn / Khoa phụ trách</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.contact} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, contact: e.target.value}})} /></div>
                                         </div>
 
-                                        {/* CREDITS & HOURS CALCULATION CARD */}
                                         <div className="bg-blue-50/80 p-8 rounded-[2rem] space-y-8 shadow-inner border border-blue-100 mt-6 animate-fade-in">
                                             <h4 className="text-xs font-bold text-blue-800 uppercase italic tracking-wider flex items-center gap-2">
                                                 <Icons.CLO /> Phân bổ tín chỉ và thời lượng tiết học
                                             </h4>
                                             
-                                            {/* Step Selectors */}
                                             <div className="grid grid-cols-3 gap-8">
                                                 <CreditStepper label="Tín chỉ Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
                                                 <CreditStepper label="Tín chỉ Thực hành" field="practice" value={syllabus.info.credits.practice} />
                                                 <CreditStepper label="Tín chỉ Thực tập" field="internship" value={syllabus.info.credits.internship} />
                                             </div>
 
-                                            {/* Output Summary */}
                                             <div className="grid grid-cols-4 gap-4 pt-6 border-t border-blue-200">
                                                 <div className="text-center bg-blue-600 text-white rounded-2xl p-4 shadow-lg">
                                                     <p className="text-[10px] font-bold uppercase opacity-80 mb-1">Số tín chỉ</p>
@@ -384,14 +373,6 @@
                                                 <div className="text-center bg-white rounded-2xl p-4 shadow-sm border border-blue-100 flex flex-col justify-center">
                                                     <p className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Số tiết tự học</p>
                                                     <p className="text-xl font-bold text-emerald-700">{syllabus.info.hours.selfStudy}</p>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center px-4">
-                                                <p className="text-xs text-blue-700 italic">Tổng số tiết học lên lớp (Classroom hours): <span className="font-bold underline">{syllabus.info.hours.classroom} tiết</span></p>
-                                                <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                                    <span>Tiết thi kết thúc:</span>
-                                                    <input type="number" className="w-12 p-1 border rounded text-center font-bold text-blue-600 bg-white" value={syllabus.info.hours.exam} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, hours: {...syllabus.info.hours, exam: parseInt(e.target.value)||0}}})} />
                                                 </div>
                                             </div>
                                         </div>
@@ -421,27 +402,61 @@
                                             </div>
                                         </section>
                                         <section className="pt-6 border-t border-slate-100">
-                                            <h4 className="text-sm font-bold uppercase text-slate-600 mb-4 italic tracking-tighter">Ma trận đóng góp CLO đối với PLO:</h4>
-                                            <div className="overflow-x-auto border rounded-xl shadow-sm">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h4 className="text-sm font-bold text-slate-600 italic tracking-tighter">Bảng đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:</h4>
+                                                {canEditThis && (
+                                                    <button onClick={() => {
+                                                        const newPLO = `PLO ${syllabus.cloMatrix.plos.length + 1}`;
+                                                        setSyllabus(prev => ({...prev, cloMatrix: {...prev.cloMatrix, plos: [...prev.cloMatrix.plos, newPLO]}}));
+                                                    }} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100">+ Thêm cột PLO</button>
+                                                )}
+                                            </div>
+                                            <div className="overflow-x-auto border rounded-xl shadow-sm bg-white">
                                                 <table className="w-full text-xs text-left border-collapse">
                                                     <thead className="bg-slate-50 border-b">
-                                                        <tr><th className="p-4 border-r min-w-[100px] font-bold uppercase text-slate-500">CLO \ PLO</th>{syllabus.cloMatrix.plos.map((p, idx) => <th key={idx} className="p-2 text-center border-r text-blue-600 font-bold uppercase tracking-tighter">{p}</th>)}</tr>
+                                                        <tr>
+                                                            <th className="p-4 border-r min-w-[120px] font-bold uppercase text-slate-500 text-center">Chuẩn đầu ra học phần</th>
+                                                            {syllabus.cloMatrix.plos.map((p, idx) => (
+                                                                <th key={idx} className="p-2 text-center border-r text-blue-600 font-bold min-w-[60px] relative group">
+                                                                    <input disabled={!canEditThis} className="w-full text-center bg-transparent outline-none focus:text-blue-800 uppercase" value={p} onChange={e => {
+                                                                        const n = [...syllabus.cloMatrix.plos];
+                                                                        n[idx] = e.target.value;
+                                                                        setSyllabus({...syllabus, cloMatrix: {...syllabus.cloMatrix, plos: n}});
+                                                                    }} />
+                                                                    {canEditThis && (
+                                                                        <button onClick={() => {
+                                                                            const n = syllabus.cloMatrix.plos.filter((_, i) => i !== idx);
+                                                                            setSyllabus({...syllabus, cloMatrix: {...syllabus.cloMatrix, plos: n}});
+                                                                        }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 items-center justify-center hidden group-hover:flex">×</button>
+                                                                    )}
+                                                                </th>
+                                                            ))}
+                                                        </tr>
                                                     </thead>
                                                     <tbody>
                                                         {syllabus.clos.map((c, cIdx) => (
                                                             <tr key={cIdx} className="border-b last:border-none hover:bg-slate-50/50 transition-colors">
-                                                                <td className="p-4 border-r font-bold bg-slate-50/30 text-slate-700">{c.id}</td>
+                                                                <td className="p-4 border-r font-bold bg-slate-50/30 text-slate-700 text-center">{c.id}</td>
                                                                 {syllabus.cloMatrix.plos.map((p, pIdx) => (
-                                                                    <td key={pIdx} className="p-0 border-r last:border-none"><input disabled={!canEditThis} className="w-full text-center p-3 uppercase bg-transparent outline-none focus:bg-blue-50/50" placeholder="-" value={syllabus.cloMatrix.mapping[c.id]?.[p] || ''} onChange={e => {
-                                                                        const val = e.target.value;
-                                                                        setSyllabus(prev => ({...prev, cloMatrix: {...prev.cloMatrix, mapping: {...prev.cloMatrix.mapping, [c.id]: {...prev.cloMatrix.mapping[c.id], [p]: val}}}}));
-                                                                    }} /></td>
+                                                                    <td key={pIdx} className="p-0 border-r last:border-none">
+                                                                        <input disabled={!canEditThis} className="w-full text-center p-3 uppercase bg-transparent outline-none focus:bg-blue-50/50" placeholder="-" value={syllabus.cloMatrix.mapping[c.id]?.[p] || ''} onChange={e => {
+                                                                            const val = e.target.value;
+                                                                            setSyllabus(prev => ({...prev, cloMatrix: {...prev.cloMatrix, mapping: {...prev.cloMatrix.mapping, [c.id]: {...prev.cloMatrix.mapping[c.id], [p]: val}}}}));
+                                                                        }} />
+                                                                    </td>
                                                                 ))}
                                                             </tr>
                                                         ))}
+                                                        <tr className="bg-slate-50/50 font-bold border-t">
+                                                            <td className="p-4 border-r text-blue-800 text-center">Học phần: {syllabus.info.name || "..."}</td>
+                                                            {syllabus.cloMatrix.plos.map((p, idx) => (
+                                                                <td key={idx} className="p-3 text-center border-r text-slate-400">***</td>
+                                                            ))}
+                                                        </tr>
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            <p className="mt-3 text-[10px] text-slate-400 italic">* Ghi rõ mức độ đóng góp: I, R, M và học phần A. *** Hàng cuối cùng: tổng hợp mức đóng góp cao nhất.</p>
                                         </section>
                                     </div>
                                 )}

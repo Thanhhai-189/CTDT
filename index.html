@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro V3.5 - Logic 2.2 & 8 Sections</title>
+    <title>SyllabusPro V3.6 - Split Objectives & CLOs</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -53,6 +53,7 @@
         const Icons = {
             Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
             Target: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            CLO: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             Description: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>,
             Layers: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
             Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
@@ -217,23 +218,22 @@
             };
 
             const handleDuplicate = () => {
-                if (!user || user.isAnonymous) return alert("Vui lòng đăng nhập Gmail để nhân bản.");
+                if (!user) return alert("Vui lòng đăng nhập Gmail để nhân bản.");
                 if (!isAdmin && !isEditor) return alert("Bạn không có quyền thực hiện chức năng này.");
                 if (!syllabus.info.code) return alert("Học phần hiện tại chưa có thông tin để nhân bản.");
 
                 const duplicatedSyllabus = JSON.parse(JSON.stringify(syllabus));
                 duplicatedSyllabus.id = ''; 
                 duplicatedSyllabus.info.code = `${duplicatedSyllabus.info.code}-copy`;
-                
                 duplicatedSyllabus.ownerUid = user.uid;
                 duplicatedSyllabus.ownerEmail = user.email;
 
                 setSyllabus(duplicatedSyllabus);
-                alert("Đã nhân bản thành công! Bạn hiện là chủ sở hữu của bản sao này và có thể chỉnh sửa/lưu lại.");
+                alert("Đã nhân bản thành công! Bạn hiện là chủ sở hữu bản sao này.");
             };
 
             const exportWord = () => {
-                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle } = window.docx;
+                const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType } = window.docx;
                 const docObj = new Document({
                     sections: [{
                         children: [
@@ -243,10 +243,12 @@
                             new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG", bold: true })] }),
                             new Paragraph({ text: `Học phần: ${syllabus.info.name}` }),
                             new Paragraph({ text: `Mã học phần: ${syllabus.info.code}` }),
-                            new Paragraph({ text: `Số tín chỉ: ${syllabus.info.credits.total}` }),
 
                             new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU", bold: true })], spacing: { before: 200 } }),
                             new Paragraph({ text: syllabus.objectives }),
+
+                            new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA", bold: true })], spacing: { before: 200 } }),
+                            ...syllabus.clos.map(c => new Paragraph({ text: `${c.id}. ${c.content}` })),
 
                             new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true })], spacing: { before: 200 } }),
                             new Table({
@@ -256,10 +258,6 @@
                                     ...syllabus.structure.map(r => new TableRow({ children: [r.stt, r.title, r.clo, r.lt, r.th].map(c => new TableCell({ children: [new Paragraph({ text: String(c) })] })) }))
                                 ]
                             }),
-                            
-                            new Paragraph({ children: [new TextRun({ text: "VIII. TÀI LIỆU & IX. QUY ĐỊNH", bold: true })], spacing: { before: 200 } }),
-                            new Paragraph({ text: syllabus.materials }),
-                            new Paragraph({ text: syllabus.regulations }),
                         ]
                     }]
                 });
@@ -282,7 +280,7 @@
             return (
                 <div className="flex h-screen bg-slate-100 font-inter text-sm">
                     {/* Sidebar */}
-                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden">
+                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                             <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">SyllabusPro</h1>
                             <button onClick={() => setSyllabus(initialSyllabus)} className="text-white/50 hover:text-white" title="Tạo mới"><Icons.Plus /></button>
@@ -291,15 +289,16 @@
                             <div className="flex flex-col gap-1 mb-6">
                                 {[
                                     { id: 'info', label: '1. Thông tin chung', icon: Icons.Info },
-                                    { id: 'objectives', label: '2. Mục tiêu & CĐR', icon: Icons.Target },
-                                    { id: 'description', label: '3. Mô tả học phần', icon: Icons.Description },
-                                    { id: 'structure', label: '4. Cấu trúc học phần', icon: Icons.Layers },
-                                    { id: 'teaching', label: '5. Kế hoạch dạy học', icon: Icons.Calendar },
-                                    { id: 'assessment', label: '6. Đánh giá', icon: Icons.Assessment },
-                                    { id: 'materials', label: '7. Tài liệu', icon: Icons.Materials },
-                                    { id: 'regulations', label: '8. Quy định', icon: Icons.User }
+                                    { id: 'objectives', label: '2. Mục tiêu', icon: Icons.Target },
+                                    { id: 'clos', label: '3. Chuẩn đầu ra', icon: Icons.CLO },
+                                    { id: 'description', label: '4. Mô tả học phần', icon: Icons.Description },
+                                    { id: 'structure', label: '5. Cấu trúc học phần', icon: Icons.Layers },
+                                    { id: 'teaching', label: '6. Kế hoạch dạy học', icon: Icons.Calendar },
+                                    { id: 'assessment', label: '7. Đánh giá', icon: Icons.Assessment },
+                                    { id: 'materials', label: '8. Tài liệu', icon: Icons.Materials },
+                                    { id: 'regulations', label: '9. Quy định', icon: Icons.User }
                                 ].map(tab => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}>
                                         <tab.icon /> {tab.label}
                                     </button>
                                 ))}
@@ -321,12 +320,12 @@
                         <div className="p-4 bg-slate-800/50 border-t border-slate-800">
                             {user ? (
                                 <div className="flex items-center gap-2">
-                                    <img src={user.photoURL} className="w-8 h-8 rounded-full border border-blue-500" />
+                                    <img src={user.photoURL} className="w-8 h-8 rounded-full border border-blue-500 shadow-sm" />
                                     <div className="min-w-0 flex-1"><p className="text-[10px] font-bold truncate">{user.displayName}</p><p className="text-[8px] uppercase text-emerald-400 font-bold">{userRole}</p></div>
                                     <button onClick={() => window.fb.signOut(fbAuthRef.current)} className="text-slate-500 hover:text-white"><Icons.Logout /></button>
                                 </div>
                             ) : (
-                                <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"><Icons.Google /> Đăng nhập Gmail</button>
+                                <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg"><Icons.Google /> Đăng nhập Gmail</button>
                             )}
                         </div>
                     </aside>
@@ -337,7 +336,7 @@
                             <div className="flex flex-col">
                                 <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
                                     {syllabus.info.name || "Soạn thảo đề cương"}
-                                    {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono uppercase">{syllabus.info.code}</span>}
+                                    {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono uppercase tracking-tighter">{syllabus.info.code}</span>}
                                 </h2>
                                 {syllabus.ownerEmail && (
                                     <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
@@ -347,17 +346,17 @@
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={handleDuplicate} disabled={!isAdmin && !isEditor} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50"><Icons.Copy /> Nhân bản</button>
-                                <button onClick={saveToCloud} disabled={isSaving || !canEditThis} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow shadow-blue-200 disabled:opacity-50"><Icons.Save /> {isSaving ? "Đang lưu..." : "Lưu Cloud"}</button>
-                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700"><Icons.FileText /> Xuất Word</button>
+                                <button onClick={handleDuplicate} disabled={!isAdmin && !isEditor} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-all"><Icons.Copy /> Nhân bản</button>
+                                <button onClick={saveToCloud} disabled={isSaving || !canEditThis} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 transition-all"><Icons.Save /> {isSaving ? "Đang lưu..." : "Lưu Cloud"}</button>
+                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all"><Icons.FileText /> Xuất Word</button>
                             </div>
                         </header>
 
                         <div className="flex-1 overflow-y-auto p-10 font-times bg-white/50 animate-fade-in custom-scrollbar">
-                            <div className="max-w-5xl mx-auto bg-white p-12 shadow-2xl rounded-2xl border min-h-full relative">
+                            <div className="max-w-5xl mx-auto bg-white p-12 shadow-2xl rounded-2xl border min-h-full relative overflow-hidden">
                                 {!canEditThis && user && (
-                                    <div className="absolute top-4 right-4 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold z-10 shadow-sm">
-                                        Chế độ xem (Chủ sở hữu: {syllabus.ownerEmail})
+                                    <div className="absolute top-4 right-4 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold z-10 shadow-sm animate-pulse">
+                                        CHẾ ĐỘ XEM (Của: {syllabus.ownerEmail})
                                     </div>
                                 )}
 
@@ -365,11 +364,11 @@
                                     <div className="space-y-6 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">I. Thông tin chung</h3>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1 col-span-2"><label className="text-xs font-bold text-slate-400 uppercase">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded font-bold outline-none bg-slate-50 focus:bg-white transition-all" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} /></div>
-                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded uppercase font-mono bg-slate-50 focus:bg-white" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} /></div>
-                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2 border rounded bg-slate-50 focus:bg-white" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} /></div>
+                                            <div className="space-y-1 col-span-2"><label className="text-xs font-bold text-slate-400 uppercase">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} /></div>
+                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2 border rounded uppercase font-mono bg-slate-50 focus:bg-white shadow-inner" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} /></div>
+                                            <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2 border rounded bg-slate-50 focus:bg-white shadow-inner" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} /></div>
                                             
-                                            <div className="grid grid-cols-4 gap-4 col-span-2 bg-blue-50 p-6 rounded-2xl shadow-inner mt-4 border border-blue-100">
+                                            <div className="grid grid-cols-4 gap-4 col-span-2 bg-blue-50/50 p-6 rounded-2xl shadow-inner mt-4 border border-blue-100">
                                                 <CreditStepper label="TC Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
                                                 <CreditStepper label="TC Thực hành" field="practice" value={syllabus.info.credits.practice} />
                                                 <CreditStepper label="TC Thực tập" field="internship" value={syllabus.info.credits.internship} />
@@ -383,23 +382,29 @@
                                 )}
 
                                 {activeTab === 'objectives' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">II. Mục tiêu học phần</h3>
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Nêu rõ mục tiêu cần đạt được về kiến thức, kỹ năng, mức tự chủ trách nhiệm..." />
+                                    </div>
+                                )}
+
+                                {activeTab === 'clos' && (
                                     <div className="space-y-10 animate-fade-in">
                                         <section>
-                                            <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4 tracking-tighter">II. Mục tiêu & III. Chuẩn đầu ra</h3>
-                                            <textarea disabled={!canEditThis} rows="4" className="w-full p-4 border rounded italic mb-6 shadow-inner bg-slate-50 focus:bg-white transition-all" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Mục tiêu chung..." />
+                                            <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4 tracking-tighter">III. Chuẩn đầu ra</h3>
                                             <div className="space-y-2">
                                                 {syllabus.clos.map((c, idx) => (
                                                     <div key={idx} className="flex gap-2 group animate-fade-in">
                                                         <input disabled={!canEditThis} className="w-16 p-2 border rounded font-bold text-center uppercase shadow-sm bg-slate-50" value={c.id} onChange={e => { const n = [...syllabus.clos]; n[idx].id = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
-                                                        <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded shadow-sm focus:ring-1 focus:ring-blue-400 outline-none" rows="1" value={c.content} onChange={e => { const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
+                                                        <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded shadow-sm focus:ring-1 focus:ring-blue-400 outline-none font-times" rows="1" value={c.content} onChange={e => { const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
                                                         {canEditThis && <button onClick={() => setSyllabus({...syllabus, clos: syllabus.clos.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 p-1 transition-colors"><Icons.Trash /></button>}
                                                     </div>
                                                 ))}
-                                                <button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id: `HP${syllabus.clos.length+1}`, content: ''}]})} className="text-blue-600 text-xs font-bold hover:underline py-2">+ Thêm chuẩn đầu ra (CLO)</button>
+                                                <button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id: `HP${syllabus.clos.length+1}`, content: ''}]})} className="text-blue-600 text-xs font-bold hover:underline py-2 tracking-tight">+ Thêm chuẩn đầu ra (CLO)</button>
                                             </div>
                                         </section>
                                         <section className="pt-6 border-t border-slate-100">
-                                            <h4 className="text-sm font-bold uppercase text-slate-600 mb-4 italic tracking-tighter">Ma trận đóng góp CLO đối với PLO:</h4>
+                                            <h4 className="text-sm font-bold uppercase text-slate-600 mb-4 italic tracking-tighter">Bảng đóng góp CLO đối với chương trình đào tạo (PLO):</h4>
                                             <div className="overflow-x-auto border rounded-2xl shadow-sm">
                                                 <table className="w-full text-xs text-left border-collapse">
                                                     <thead className="bg-slate-50 border-b">
@@ -426,14 +431,14 @@
 
                                 {activeTab === 'description' && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">III. Mô tả học phần</h3>
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IV. Mô tả học phần</h3>
                                         <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.description} onChange={e => setSyllabus({...syllabus, description: e.target.value})} placeholder="Mô tả tóm tắt nội dung chính của môn học..." />
                                     </div>
                                 )}
 
                                 {activeTab === 'structure' && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">IV. Cấu trúc học phần</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, {stt: syllabus.structure.length+1, title: '', clo: 'HP1', lt: 0, th: 0, material: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md">+ Thêm bài giảng</button></div>
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">V. Cấu trúc học phần</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, {stt: syllabus.structure.length+1, title: '', clo: 'HP1', lt: 0, th: 0, material: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm bài giảng</button></div>
                                         <div className="overflow-x-auto border rounded-2xl shadow-sm">
                                             <table className="w-full text-[11px] text-left border-collapse">
                                                 <thead className="bg-slate-50 font-bold border-b text-slate-600">
@@ -443,7 +448,7 @@
                                                     {syllabus.structure.map((r, i) => (
                                                         <tr key={i} className="border-b hover:bg-slate-50/50 transition-all">
                                                             <td className="p-2 border-r text-center font-bold text-slate-400">{r.stt}</td>
-                                                            <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent" value={r.title} onChange={e => { const n = [...syllabus.structure]; n[i].title = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
+                                                            <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent font-times" value={r.title} onChange={e => { const n = [...syllabus.structure]; n[i].title = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
                                                             <td className="p-2 border-r"><input disabled={!canEditThis} className="w-full outline-none bg-transparent uppercase text-blue-600 font-bold text-center" value={r.clo} onChange={e => { const n = [...syllabus.structure]; n[i].clo = e.target.value; setSyllabus({...syllabus, structure: n}) }} /></td>
                                                             <td className="p-1 border-r text-center"><input type="number" disabled={!canEditThis} className="w-10 text-center bg-transparent" value={r.lt} onChange={e => { const n = [...syllabus.structure]; n[i].lt = parseInt(e.target.value)||0; setSyllabus({...syllabus, structure: n}) }} /></td>
                                                             <td className="p-1 border-r text-center"><input type="number" disabled={!canEditThis} className="w-10 text-center bg-transparent" value={r.th} onChange={e => { const n = parseInt(e.target.value)||0; const updatedStructure = [...syllabus.structure]; updatedStructure[i].th = n; setSyllabus({...syllabus, structure: updatedStructure}); }} /></td>
@@ -459,7 +464,7 @@
 
                                 {activeTab === 'teaching' && (
                                     <div className="space-y-6 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">V. Kế hoạch và phương pháp dạy học</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, teachingPlan: [...syllabus.teachingPlan, {title: '', instructor: '', student: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md">+ Thêm nội dung chi tiết</button></div>
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. Kế hoạch và phương pháp dạy học</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, teachingPlan: [...syllabus.teachingPlan, {title: '', instructor: '', student: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm nội dung chi tiết</button></div>
                                         {syllabus.teachingPlan.map((p, i) => (
                                             <div key={i} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 space-y-4 group shadow-sm hover:border-blue-200 transition-all">
                                                 <div className="flex justify-between items-center">
@@ -477,13 +482,13 @@
 
                                 {activeTab === 'assessment' && (
                                     <div className="space-y-6 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. Đánh giá kết quả học tập</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: `A${syllabus.assessments.length+1}.1`, type: '', method: '', weight: '10%'}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm tiêu chí</button></div>
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VII. Đánh giá kết quả học tập</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: `A${syllabus.assessments.length+1}.1`, type: '', method: '', weight: '10%'}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm tiêu chí</button></div>
                                         <div className="space-y-4">
                                             {syllabus.assessments.map((ass, i) => (
                                                 <div key={i} className="flex gap-4 items-center bg-slate-50/80 p-5 rounded-3xl border border-slate-100 group shadow-sm hover:bg-white hover:border-blue-200 transition-all">
-                                                    <div className="w-16"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Mã</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center font-bold bg-white shadow-sm" value={ass.code} onChange={e => { const n = [...syllabus.assessments]; n[i].code = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
+                                                    <div className="w-16"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Mã</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center font-bold bg-white shadow-sm shadow-inner" value={ass.code} onChange={e => { const n = [...syllabus.assessments]; n[i].code = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
                                                     <div className="flex-1 space-y-3">
-                                                        <div className="grid grid-cols-2 gap-3"><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 font-times" value={ass.type} placeholder="Hình thức đánh giá..." onChange={e => { const n = [...syllabus.assessments]; n[i].type = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 font-times" value={ass.method} placeholder="Phương pháp..." onChange={e => { const n = [...syllabus.assessments]; n[i].method = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
+                                                        <div className="grid grid-cols-2 gap-3"><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 outline-none font-times shadow-inner" value={ass.type} placeholder="Hình thức..." onChange={e => { const n = [...syllabus.assessments]; n[i].type = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 outline-none font-times shadow-inner" value={ass.method} placeholder="Phương pháp..." onChange={e => { const n = [...syllabus.assessments]; n[i].method = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
                                                     </div>
                                                     <div className="w-16 text-center"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Trọng số</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center text-blue-600 font-bold bg-white shadow-inner" value={ass.weight} onChange={e => { const n = [...syllabus.assessments]; n[i].weight = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
                                                     {canEditThis && <button onClick={() => setSyllabus({...syllabus, assessments: syllabus.assessments.filter((_, idx) => idx !== i)})} className="mt-4 text-slate-300 hover:text-red-500 transition-all p-2"><Icons.Trash /></button>}
@@ -495,19 +500,19 @@
 
                                 {activeTab === 'materials' && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VII. Cơ sở vật chất, học liệu</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner bg-slate-50 font-times" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} placeholder="Liệt kê tối đa 6 tài liệu theo chuẩn..." />
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VIII. Cơ sở vật chất, học liệu</h3>
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner bg-slate-50 font-times" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} placeholder="Giáo trình bắt buộc, tài liệu tham khảo..." />
                                     </div>
                                 )}
 
                                 {activeTab === 'regulations' && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VIII. Quy định của học phần</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Quy định về nề nếp, điểm thi thực hành..." />
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IX. Quy định của học phần</h3>
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Quy định về nề nếp, điểm thực hành..." />
                                     </div>
                                 )}
 
-                                <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t border-slate-100 pt-6 uppercase tracking-[0.2em]">SyllabusPro V3.5 - Standard Training Software for SQKT</div>
+                                <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t border-slate-100 pt-6 uppercase tracking-[0.2em]">SyllabusPro V3.6 - Standard Training Software for SQKT</div>
                             </div>
                         </div>
                     </main>

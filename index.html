@@ -430,7 +430,7 @@ const exportWord = async () => {
     addFullSection("VI", "KẾ HOẠCH DẠY HỌC CHI TIẾT", syllabus.teachingPlan?.map(p => `${p.title}: Giảng viên: ${p.instructor}, Học viên: ${p.student}`).join("\n"));
     addFullSection("VII", "ĐÁNH GIÁ", syllabus.assessments?.map(a => `${a.code} - ${a.method}: ${a.criteria} (${a.weight})`).join("\n"));
     
-    const materialContent = `Học liệu bắt buộc:\n${(syllabus.materials?.required || []).join("\n")}\nHọc liệu tham khảo:\n${(syllabus.materials?.reference || []).join("\n")}\nThiết bị:\n${syllabus.materials?.equipment || ""}`;
+    const materialContent = `1. Học liệu bắt buộc:\n${(syllabus.materials?.required || []).join("\n")}\n2.Học liệu tham khảo:\n${(syllabus.materials?.reference || []).join("\n")}\n3. Thiết bị:\n${syllabus.materials?.equipment || ""}`;
     addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContent);
     addFullSection("IX", "QUY ĐỊNH CỦA HỌC PHẦN", syllabus.regulations);
 

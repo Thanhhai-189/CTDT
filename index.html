@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro V3.8 - Matrix Update</title>
+    <title>SyllabusPro V3.9 - Auto Matrix Logic</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -245,6 +245,32 @@
                 </div>
             );
 
+            // LOGIC TỰ ĐỘNG TÍNH TOÁN DÒNG HỌC PHẦN (SUMMARY ROW)
+            const calculatePloSummary = (ploName) => {
+                const levelsRank = { "": 0, "I": 1, "R": 2, "M": 3 };
+                let maxLevelNum = 0;
+                let hasAssessment = false;
+
+                syllabus.clos.forEach(clo => {
+                    const cellValue = (syllabus.cloMatrix.mapping[clo.id]?.[ploName] || "").toUpperCase().trim();
+                    if (!cellValue) return;
+
+                    if (cellValue.includes("A")) hasAssessment = true;
+                    
+                    if (cellValue.includes("M")) maxLevelNum = Math.max(maxLevelNum, 3);
+                    else if (cellValue.includes("R")) maxLevelNum = Math.max(maxLevelNum, 2);
+                    else if (cellValue.includes("I")) maxLevelNum = Math.max(maxLevelNum, 1);
+                });
+
+                const levelMap = { 0: "", 1: "I", 2: "R", 3: "M" };
+                const baseLevel = levelMap[maxLevelNum];
+
+                if (baseLevel && hasAssessment) return `${baseLevel}, A`;
+                if (baseLevel) return baseLevel;
+                if (hasAssessment) return "A";
+                return "";
+            };
+
             if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500 animate-pulse">SyllabusPro đang khởi động...</div>;
 
             return (
@@ -447,16 +473,24 @@
                                                                 ))}
                                                             </tr>
                                                         ))}
-                                                        <tr className="bg-slate-50/50 font-bold border-t">
-                                                            <td className="p-4 border-r text-blue-800 text-center">Học phần: {syllabus.info.name || "..."}</td>
-                                                            {syllabus.cloMatrix.plos.map((p, idx) => (
-                                                                <td key={idx} className="p-3 text-center border-r text-slate-400">***</td>
-                                                            ))}
+                                                        <tr className="bg-blue-50/30 font-bold border-t border-blue-200">
+                                                            <td className="p-4 border-r text-blue-800 text-center italic">Học phần: {syllabus.info.name || "..."}</td>
+                                                            {syllabus.cloMatrix.plos.map((p, idx) => {
+                                                                const summaryValue = calculatePloSummary(p);
+                                                                return (
+                                                                    <td key={idx} className="p-3 text-center border-r text-blue-700 font-bold text-sm bg-blue-50/20">
+                                                                        {summaryValue || ""}
+                                                                    </td>
+                                                                );
+                                                            })}
                                                         </tr>
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <p className="mt-3 text-[10px] text-slate-400 italic">* Ghi rõ mức độ đóng góp: I, R, M và học phần A. *** Hàng cuối cùng: tổng hợp mức đóng góp cao nhất.</p>
+                                            <p className="mt-3 text-[10px] text-slate-400 italic font-times">
+                                                * Chú thích mức độ: I (Giới thiệu), R (Phát triển), M (Đạt trình độ), A (Đánh giá).<br/>
+                                                ** Dòng Học phần: Tổng hợp mức độ cao nhất theo quy trình I &lt; R &lt; M và kết hợp đánh giá A.
+                                            </p>
                                         </section>
                                     </div>
                                 )}

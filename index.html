@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro V3.9 - Auto Matrix Logic</title>
+    <title>SyllabusPro V4.0 - Structured Materials</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -93,7 +93,11 @@
             structure: [],
             teachingPlan: [],
             assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', criteria: 'Chuyên cần, kiến thức', weight: '10%', clo: 'HP1' }],
-            materials: '',
+            materials: {
+                required: [''],
+                reference: [''],
+                equipment: ''
+            },
             regulations: ''
         };
 
@@ -227,7 +231,6 @@
                             new Paragraph({ text: "ĐỀ CƯƠNG HỌC PHẦN", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
                             new Paragraph({ text: `Học phần: ${syllabus.info.name}` }),
                             new Paragraph({ text: `Mã học phần: ${syllabus.info.code}` }),
-                            new Paragraph({ text: `Số tín chỉ: ${syllabus.info.credits.total}` }),
                         ]
                     }]
                 });
@@ -245,7 +248,6 @@
                 </div>
             );
 
-            // LOGIC TỰ ĐỘNG TÍNH TOÁN DÒNG HỌC PHẦN (SUMMARY ROW)
             const calculatePloSummary = (ploName) => {
                 const levelsRank = { "": 0, "I": 1, "R": 2, "M": 3 };
                 let maxLevelNum = 0;
@@ -269,6 +271,22 @@
                 if (baseLevel) return baseLevel;
                 if (hasAssessment) return "A";
                 return "";
+            };
+
+            // Helpers for Materials
+            const updateMaterialList = (type, index, value) => {
+                const newList = [...syllabus.materials[type]];
+                newList[index] = value;
+                setSyllabus({...syllabus, materials: {...syllabus.materials, [type]: newList}});
+            };
+
+            const addMaterial = (type) => {
+                setSyllabus({...syllabus, materials: {...syllabus.materials, [type]: [...syllabus.materials[type], '']}});
+            };
+
+            const removeMaterial = (type, index) => {
+                const newList = syllabus.materials[type].filter((_, i) => i !== index);
+                setSyllabus({...syllabus, materials: {...syllabus.materials, [type]: newList}});
             };
 
             if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500 animate-pulse">SyllabusPro đang khởi động...</div>;
@@ -487,10 +505,6 @@
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <p className="mt-3 text-[10px] text-slate-400 italic font-times">
-                                                * Chú thích mức độ: I (Giới thiệu), R (Phát triển), M (Đạt trình độ), A (Đánh giá).<br/>
-                                                ** Dòng Học phần: Tổng hợp mức độ cao nhất theo quy trình I &lt; R &lt; M và kết hợp đánh giá A.
-                                            </p>
                                         </section>
                                     </div>
                                 )}
@@ -565,9 +579,56 @@
                                 )}
 
                                 {activeTab === 'materials' && (
-                                    <div className="space-y-4 animate-fade-in">
+                                    <div className="space-y-10 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VIII. Cơ sở vật chất, học liệu</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} placeholder="Giáo trình, tài liệu tham khảo..." />
+                                        
+                                        {/* 1. Học liệu bắt buộc */}
+                                        <section className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <h4 className="text-sm font-bold text-slate-700 uppercase">1. Học liệu bắt buộc</h4>
+                                                {canEditThis && (
+                                                    <button onClick={() => addMaterial('required')} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100">+ Thêm tài liệu</button>
+                                                )}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {syllabus.materials.required.map((mat, idx) => (
+                                                    <div key={idx} className="flex gap-2 group items-start">
+                                                        <span className="w-10 pt-2 text-center font-bold text-slate-400">[{idx + 1}]</span>
+                                                        <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded-xl bg-slate-50 focus:bg-white focus:ring-1 focus:ring-blue-400 outline-none font-times text-sm" rows="1" value={mat} onChange={e => updateMaterialList('required', idx, e.target.value)} />
+                                                        {canEditThis && syllabus.materials.required.length > 1 && (
+                                                            <button onClick={() => removeMaterial('required', idx)} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+
+                                        {/* 2. Học liệu tham khảo */}
+                                        <section className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <h4 className="text-sm font-bold text-slate-700 uppercase">2. Học liệu tham khảo</h4>
+                                                {canEditThis && (
+                                                    <button onClick={() => addMaterial('reference')} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100">+ Thêm tài liệu</button>
+                                                )}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {syllabus.materials.reference.map((mat, idx) => (
+                                                    <div key={idx} className="flex gap-2 group items-start">
+                                                        <span className="w-10 pt-2 text-center font-bold text-slate-400">[{syllabus.materials.required.length + idx + 1}]</span>
+                                                        <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded-xl bg-slate-50 focus:bg-white focus:ring-1 focus:ring-blue-400 outline-none font-times text-sm" rows="1" value={mat} onChange={e => updateMaterialList('reference', idx, e.target.value)} />
+                                                        {canEditThis && syllabus.materials.reference.length > 0 && (
+                                                            <button onClick={() => removeMaterial('reference', idx)} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+
+                                        {/* 3. Vật chất */}
+                                        <section className="space-y-4">
+                                            <h4 className="text-sm font-bold text-slate-700 uppercase">3. Vật chất</h4>
+                                            <textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.materials.equipment} onChange={e => setSyllabus({...syllabus, materials: {...syllabus.materials, equipment: e.target.value}})} placeholder="Các trang thiết bị, vật chất huấn luyện chuyên dụng..." />
+                                        </section>
                                     </div>
                                 )}
 

@@ -127,14 +127,17 @@
     // ✅ PHẦN 6 – KẾ HOẠCH GIẢNG DẠY (ĐÚNG)
     teachingPlan: {},
 
-    assessments: [{
-        code: 'A1.1',
-        type: 'Thường xuyên',
-        method: 'Vấn đáp',
-        criteria: 'Chuyên cần, kiến thức',
-        weight: '10%',
-        clo: 'HP1'
-    }],
+ // Chuyển từ mảng [ ] sang đối tượng { }
+    assessmentPlan: {
+        'A1.1': { form: 'Thường xuyên 1', time: ' Trong suốt quá trình học tập học phần ', method: ' Kiểm tra miệng, Tính chuyên cần, Thái độ học tập ', criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập. ', weight: '10' },
+        'A1.2': { form: 'Thường xuyên 2', time: ' Trong suốt quá trình học tập học phần ', method: ' Kiểm tra miệng, Tính chuyên cần, Thái độ học tập ', criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập. ', weight: '10' },
+        'A1.3': { form: 'Thường xuyên 3', time: ' Trong suốt quá trình học tập học phần ', method: ' Kiểm tra miệng, Tính chuyên cần, Thái độ học tập ', criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập. ', weight: '10' },
+        'A2.1': { form: 'Quá trình 1', time: ' Sau khi kết thúc bài ', method: 'Viết', criteria: 'Kiến thức', weight: '20' },
+        'A2.2': { form: 'Quá trình 2', time: ' Sau khi kết thúc bài ', method: 'Viết', criteria: 'Kiến thức', weight: '20' },
+        'A3.1': { form: 'Kết thúc', time: ' Sau khi học xong học phần ', method: 'Vấn đáp', criteria: 'Tổng hợp', weight: '40' }
+
+
+    },
 
     materials: {
         required: [''],
@@ -158,6 +161,86 @@
             const fbAppRef = useRef(null);
             const fbDbRef = useRef(null);
             const fbAuthRef = useRef(null);
+                // Cập nhật giá trị cột nhập thủ công trong Phần 6
+                const updateTeachingPlanField = (lessonKey, field, value) => {
+            if (!lessonKey) return;
+
+            setSyllabus(prev => ({
+                ...prev,
+                teachingPlan: {
+                ...prev.teachingPlan,
+                [lessonKey]: {
+                    ...prev.teachingPlan?.[lessonKey],
+                    [field]: value
+                }
+                }
+            }));
+            };
+            
+            // Nhập liệu đánh giá 
+           const [assessmentPlan, setAssessmentPlan] = useState(initialSyllabus.assessmentPlan);
+    const updateAssessment = (examCode, field, value) => {
+    const newPlan = {
+        ...assessmentPlan,
+        [examCode]: {
+            ...assessmentPlan[examCode],
+            [field]: value
+        }
+    };
+    setAssessmentPlan(newPlan); // Cập nhật để hiển thị ngay
+    setSyllabus({...syllabus, assessmentPlan: newPlan}); // Lưu vào data tổng
+};
+            
+            const getLessonContents = (structure, startIdx) => {
+                const lessonNumber = getAutoSTT(startIdx);
+                const contents = [];
+                let subIndex = 1;
+
+                for (let i = startIdx + 1; i < structure.length; i++) {
+                    if (structure[i].level === 0) break;
+
+                    if (structure[i].level === 1) {
+                        contents.push(`${lessonNumber}.${subIndex} ${structure[i].title}`);
+                        subIndex++;
+                    }
+                }
+
+                return contents.join("\n");
+            };
+            const getLessonSubItems = (structure, lessonIndex) => {
+            const lessonSTT = getAutoSTT(lessonIndex);
+
+            return structure
+                .map((item, idx) => ({ item, idx }))
+                .filter(
+                ({ item, idx }) =>
+                    idx > lessonIndex &&
+                    item.level > 0 &&
+                    getAutoSTT(idx).startsWith(`${lessonSTT}.`)
+                )
+                .map(
+                ({ item, idx }) => `${getAutoSTT(idx)}. ${item.title}`
+                );
+            };
+
+            const getAssessmentRows = () => {
+            const rows = [];
+
+            syllabus.structure.forEach((item, idx) => {
+                if (item.level !== 0 || item.isTest) return;
+
+                const lessonKey = getAutoSTT(idx);
+                const plan = syllabus.teachingPlan?.[lessonKey];
+                if (!plan?.exam) return;
+
+                rows.push({
+                examCode: plan.exam,
+                clo: item.clo
+                });
+            });
+
+            return rows;
+            };
 
             const fetchUserRole = async (u) => {
                 if (!u) return;
@@ -279,8 +362,20 @@
                 alert("Đã nhân bản thành công! Bạn hiện là chủ sở hữu bản sao này.");
             };
 
+            
+
 const exportWord = async () => {
     const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } = window.docx;
+
+    const createMultiLineCell = (lines, options = {}) =>
+  new TableCell({
+    width: options.width,
+    verticalAlign: VerticalAlign.CENTER,
+    children: (Array.isArray(lines) ? lines : [lines]).map(line =>
+      tablePara(line)
+    )
+  });
+
 
     // --- CẤU HÌNH ĐỊNH DẠNG CHUẨN SQKT ---
     // font: Times New Roman
@@ -296,6 +391,51 @@ const exportWord = async () => {
         indent: { firstLine: 567 } 
     };
 
+    // =====================
+// 2. PARAGRAPH CHUẨN
+// =====================
+
+// Ngoài bảng
+const textPara = (text, extra = {}) =>
+  new Paragraph({
+    alignment: STYLES.alignment,
+    spacing: STYLES.spacing,
+    indent: STYLES.indent,
+    children: [
+      new TextRun({
+        text,
+        font: STYLES.font,
+        size: STYLES.size,
+        ...extra
+      })
+    ]
+  });
+
+// Trong bảng
+const tablePara = (text, extra = {}) =>
+  new Paragraph({
+    spacing: { before: 60, after: 60, line: 360 },
+    children: [
+      new TextRun({
+        text,
+        font: STYLES.font,
+        size: STYLES.size,
+        ...extra
+      })
+    ]
+  });
+
+// =====================
+// 3. TABLE CELL CHUẨN
+// =====================
+const createTableCell = (lines, width, bold = false) =>
+  new TableCell({
+    width,
+    verticalAlign: VerticalAlign.CENTER,
+    children: (Array.isArray(lines) ? lines : [lines]).map(
+      line => tablePara(line, bold ? { bold: true } : {})
+    )
+  });
     // Hàm tiện ích tạo ô trong bảng
     const createCell = (text, options = {}) => new TableCell({
         children: [new Paragraph({ 
@@ -318,28 +458,126 @@ const exportWord = async () => {
 
     const sections = [];
 
-    // 1. PHẦN TIÊU ĐỀ (TRƯỜNG, KHOA, QUỐC HIỆU)
-    sections.push(
-        new Paragraph({
+// 1. PHẦN TIÊU ĐỀ (Sử dụng Table để căn lề chuẩn 2 bên)
+const headerTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+    },
+    rows: [
+        new TableRow({
             children: [
-                new TextRun({ text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", bold: true, size: 24, font: STYLES.font }),
-                new TextRun({ text: "\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: STYLES.font })
+                // Cột bên trái: Tên trường và khoa
+                new TableCell({
+                    width: { size: 45, type: WidthType.PERCENTAGE },
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ 
+                                    text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", 
+                                    bold: true, size: 24, font: STYLES.font 
+                                }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ 
+                                    text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", 
+                                    bold: true, size: 24, font: STYLES.font 
+                                }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "----------", bold: true, size: 24, font: STYLES.font }),
+                            ],
+                        }),
+                    ],
+                }),
+                // Cột bên phải: Quốc hiệu và Tiêu ngữ
+                // Cột bên phải: Quốc hiệu, Tiêu ngữ và Ngày tháng
+                new TableCell({
+                    width: { size: 55, type: WidthType.PERCENTAGE },
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ 
+                                    text: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", 
+                                    bold: true, size: 24, font: STYLES.font 
+                                }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ 
+                                    text: "Độc lập - Tự do - Hạnh phúc", 
+                                    bold: true, size: 24, font: STYLES.font 
+                                }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ 
+                                    text: "_______________", 
+                                    bold: true, size: 24, font: STYLES.font 
+                                }),
+                            ],
+                        }),
+                        // DÒNG MỚI THÊM: Thành phố Hồ Chí Minh...
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 120 }, // Tạo một khoảng cách nhỏ với dòng kẻ trên
+                            children: [
+                                new TextRun({ 
+                                    text: "Thành phố Hồ Chí Minh, ngày      tháng        năm 2026", 
+                                    italic: true, // In nghiêng
+                                    size: 24, 
+                                    font: STYLES.font 
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
             ],
         }),
-        new Paragraph({
-            children: [
-                new TextRun({ text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", bold: true, size: 24, font: STYLES.font }),
-                new TextRun({ text: "\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: STYLES.font })
-            ],
-        }),
-        new Paragraph({ text: "", spacing: { before: 400 } }),
-        new Paragraph({
-            children: [new TextRun({ text: "ĐỀ CƯƠNG HỌC PHẦN", bold: true, size: 32, font: STYLES.font })],
-            alignment: AlignmentType.CENTER,
-        }),
-        new Paragraph({ text: "", spacing: { before: 400 } })
-    );
+    ],
+});
 
+// Đưa vào mảng sections
+sections.push(headerTable);
+
+// Khoảng cách sau tiêu đề đầu trang
+sections.push(new Paragraph({ text: "", spacing: { before: 200, after: 200 } }));
+
+// 2. TÊN ĐỀ CƯƠNG HỌC PHẦN
+sections.push(
+    new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 200 },
+        children: [
+            new TextRun({ 
+                text: "ĐỀ CƯƠNG HỌC PHẦN", 
+                bold: true, 
+                size: 32, 
+                font: STYLES.font 
+            })
+        ],
+    })
+);
+
+// Thêm một dòng trống sau tên đề chương
+sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
     // 2. MỤC I: THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN
     sections.push(
         new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
@@ -369,24 +607,26 @@ const exportWord = async () => {
 
     // 4. MỤC III: CHUẨN ĐẦU RA & MA TRẬN
     sections.push(
-        new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA (CLO)", bold: true, size: STYLES.size, font: STYLES.font })] }),
-        new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-                new TableRow({
-                    children: [
-                        createCell("Ký hiệu", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
-                        createCell("Nội dung chuẩn đầu ra", { bold: true, width: { size: 85, type: WidthType.PERCENTAGE } })
-                    ]
-                }),
-                ...syllabus.clos.map(c => new TableRow({
-                    children: [
-                        createCell(c.id, { alignment: AlignmentType.CENTER }),
-                        createCell(c.content, { alignment: AlignmentType.LEFT })
-                    ]
-                }))
-            ]
-        }),
+        new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        // Thay thế đoạn new Table({...}) cũ bằng đoạn này:
+        ...syllabus.clos.map(c => 
+            new Paragraph({
+                children: [
+                    new TextRun({ 
+                        text: `${c.id}. `, // Ví dụ: HP 1. 
+                        size: STYLES.size, 
+                        font: STYLES.font 
+                    }),
+                    new TextRun({ 
+                        text: c.content, // Nội dung chuẩn đầu ra
+                        size: STYLES.size, 
+                        font: STYLES.font 
+                    })
+                ],
+                alignment: AlignmentType.JUSTIFY,
+                spacing: { after: 120 } // Khoảng cách giữa các dòng CLO
+            })
+        ),
         new Paragraph({ text: "", spacing: { before: 200 } }),
         createTextPara("Ma trận đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:", { italic: true }),
         new Table({
@@ -460,38 +700,215 @@ const exportWord = async () => {
         }),
         new Paragraph({ text: "" })
     );
-    // Cập nhật giá trị cột nhập thủ công trong Phần 6
-    const updateTeachingPlanField = (lessonKey, field, value) => {
-  setSyllabus(prev => ({
-    ...prev,
-    teachingPlan: {
-      ...prev.teachingPlan,
-      [lessonKey]: {
-        instructor: '',
-        student: '',
-        exam: '',
-        ...(prev.teachingPlan?.[lessonKey] || {}),
-        [field]: value
-      }
-    }
-  }));
+
+// 7. MỤC VI: KẾ HOẠCH DẠY HỌC CHI TIẾT
+sections.push(
+  new Paragraph({
+    children: [
+      new TextRun({
+        text: "VI. KẾ HOẠCH DẠY HỌC CHI TIẾT",
+        bold: true,
+        font: STYLES.font,
+        size: STYLES.size
+      })
+    ]
+  }),
+
+  new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      // HEADER
+      new TableRow({
+        children: [
+          createCell("Bài học\n(số tiết)", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
+          createCell("Nội dung", { bold: true, width: { size: 30, type: WidthType.PERCENTAGE } }),
+          createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+          createCell("Hoạt động dạy\n(Giảng viên)", { bold: true, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          createCell("Hoạt động học\n(Học viên)", { bold: true, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          createCell("KT, thi", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } })
+        ]
+      }),
+
+      // BODY
+      ...syllabus.structure
+        .map((item, idx) => {
+          if (item.level !== 0 || item.isTest) return null;
+
+          const lesson = getAutoSTT(idx);
+          const plan = syllabus.teachingPlan?.[lesson] || {};
+
+          // Gom toàn bộ mục con 1.1, 1.2, 1.3...
+          const subContents = syllabus.structure
+            .filter((x, i) => i > idx && x.level > 0 && getAutoSTT(i).startsWith(`${lesson}.`))
+            .map(x => `${getAutoSTT(syllabus.structure.indexOf(x))}. ${x.title}`);
+
+          return new TableRow({
+            children: [
+              createMultiLineCell(
+                [`Bài ${lesson}`, `(${item.lt || 0} tiết)`],
+                { width: { size: 15, type: WidthType.PERCENTAGE } }
+              ),
+
+              createMultiLineCell(
+                [`I. ${item.title}`, ...subContents],
+                { width: { size: 30, type: WidthType.PERCENTAGE } }
+              ),
+
+              createMultiLineCell(
+                [item.clo || ""],
+                { width: { size: 10, type: WidthType.PERCENTAGE } }
+              ),
+
+              createMultiLineCell(
+                (plan.instructor || "").split("\n"),
+                { width: { size: 20, type: WidthType.PERCENTAGE } }
+              ),
+
+              createMultiLineCell(
+                (plan.student || "").split("\n"),
+                { width: { size: 20, type: WidthType.PERCENTAGE } }
+              ),
+
+              createMultiLineCell(
+                [plan.exam || ""],
+                { width: { size: 5, type: WidthType.PERCENTAGE } }
+              )
+            ]
+          });
+        })
+        .filter(Boolean)
+    ]
+  }),
+
+  new Paragraph({ text: "" })
+);
+
+// 7. MỤC VII: ĐÁNH GIÁ KẾT QUẢ HỌC TẬP
+sections.push(
+  new Paragraph({
+    children: [
+      new TextRun({
+        text: "VII. ĐÁNH GIÁ KẾT QUẢ HỌC TẬP",
+        bold: true,
+        font: STYLES.font,
+        size: STYLES.size
+      })
+    ]
+  }),
+
+  new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      // HEADER
+      new TableRow({
+        children: [
+          createCell("Hình thức đánh giá", { bold: true, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          createCell("Mã", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+          createCell("Thời điểm đánh giá", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
+          createCell("Phương pháp đánh giá", { bold: true, width: { size: 20, type: WidthType.PERCENTAGE } }),
+          createCell("Tiêu chí đánh giá", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
+          createCell("Đáp ứng CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+          createCell("Tỉ lệ (%)", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } })
+        ]
+      }),
+
+      // BODY
+      ...getAssessmentRows().map((r) => {
+        const p = syllabus.assessmentPlan?.[r.examCode] || {};
+
+        return new TableRow({
+          children: [
+            createMultiLineCell([p.form || ""], { width: { size: 20, type: WidthType.PERCENTAGE } }),
+            createMultiLineCell([r.examCode || ""], { width: { size: 10, type: WidthType.PERCENTAGE } }),
+            createMultiLineCell([p.time || ""], { width: { size: 15, type: WidthType.PERCENTAGE } }),
+            createMultiLineCell([p.method || ""], { width: { size: 20, type: WidthType.PERCENTAGE } }),
+            createMultiLineCell([p.criteria || ""], { width: { size: 15, type: WidthType.PERCENTAGE } }),
+            createMultiLineCell([r.clo || ""], { width: { size: 10, type: WidthType.PERCENTAGE } }),
+            createMultiLineCell([p.weight || ""], { width: { size: 10, type: WidthType.PERCENTAGE } })
+          ]
+        });
+      })
+    ]
+  }),
+
+  new Paragraph({ text: "" })
+);
+
+
+    
+    
+
+
+
+// Hàm thêm 1 section đầy đủ vào document
+const addFullSection = (num, title, contentParas) => {
+    // Tiêu đề section
+    sections.push(
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: `${num}. ${title}`,
+                    bold: true,
+                    size: STYLES.size,
+                    font: STYLES.font,
+                }),
+            ],
+        })
+    );
+
+    // Thêm nội dung từng paragraph
+    contentParas.forEach((para) => {
+        sections.push(createTextPara(para.text, para.options));
+    });
+
+    // Thêm paragraph trống để ngắt section
+    sections.push(new Paragraph({ text: "" }));
 };
 
-    // 7. CÁC MỤC CÒN LẠI (VI - IX)
-    const addFullSection = (num, title, content) => {
-        sections.push(
-            new Paragraph({ children: [new TextRun({ text: `${num}. ${title}`, bold: true, size: STYLES.size, font: STYLES.font })] }),
-            createTextPara(content),
-            new Paragraph({ text: "" })
-        );
-    };
+// --- Tạo nội dung section VIII ---
+const materialContentParas = [];
 
-    addFullSection("VI", "KẾ HOẠCH DẠY HỌC CHI TIẾT", syllabus.teachingPlan?.map(p => `${p.title}: Giảng viên: ${p.instructor}, Học viên: ${p.student}`).join("\n"));
-    addFullSection("VII", "ĐÁNH GIÁ", syllabus.assessments?.map(a => `${a.code} - ${a.method}: ${a.criteria} (${a.weight})`).join("\n"));
-    
-    const materialContent = `1. Học liệu bắt buộc:\n${(syllabus.materials?.required || []).join("\n")}\n2.Học liệu tham khảo:\n${(syllabus.materials?.reference || []).join("\n")}\n3. Thiết bị:\n${syllabus.materials?.equipment || ""}`;
-    addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContent);
-    addFullSection("IX", "QUY ĐỊNH CỦA HỌC PHẦN", syllabus.regulations);
+let counter = 1; // Biến đếm số thứ tự
+
+// 1. Học liệu bắt buộc
+materialContentParas.push({ text: "1. Học liệu bắt buộc:", options: { bold: true } });
+(syllabus.materials?.required || []).forEach((item) => {
+    materialContentParas.push({ text: `[${counter}] ${item}` });
+    counter++;
+});
+
+// 2. Học liệu tham khảo
+materialContentParas.push({ text: "2. Học liệu tham khảo:", options: { bold: true } });
+(syllabus.materials?.reference || []).forEach((item) => {
+    materialContentParas.push({ text: `[${counter}] ${item}` });
+    counter++;
+});
+
+// 3. Vật chất / Thiết bị
+materialContentParas.push({ text: "3. Vật chất:", options: { bold: true } });
+materialContentParas.push({ text: "..............................................................................................................................." });
+
+// Thêm section VIII vào document
+addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContentParas);
+
+
+// 9. MỤC IX: QUY ĐỊNH CỦA HỌC PHẦN
+sections.push(
+    new Paragraph({ 
+        children: [new TextRun({ 
+            text: "IX. QUY ĐỊNH CỦA HỌC PHẦN", 
+            bold: true, 
+            size: STYLES.size, 
+            font: STYLES.font 
+        })] 
+    }),
+    createTextPara(syllabus.regulations || "Chưa nhập thông tin."),
+    new Paragraph({ text: "" })
+);
+
+
+
+
 
     // 8. PHẦN CHỮ KÝ (CHỈ CHỦ NHIỆM KHOA VÀ TRƯỞNG BỘ MÔN)
     sections.push(
@@ -503,7 +920,7 @@ const exportWord = async () => {
                 new TableRow({
                     children: [
                         createCell("CHỦ NHIỆM KHOA", { bold: true, alignment: AlignmentType.CENTER }),
-                        createCell(`${syllabus.header?.city || "Tp. Hồ Chí Minh"}, ngày... tháng... năm...\nTRƯỞNG BỘ MÔN`, { bold: true, alignment: AlignmentType.CENTER })
+                        createCell("TRƯỞNG BỘ MÔN", { bold: true, alignment: AlignmentType.CENTER })
                     ]
                 }),
                 new TableRow({
@@ -616,6 +1033,23 @@ const exportWord = async () => {
                 n[index].level = Math.max(0, Math.min(2, (n[index].level || 0) + delta));
                 setSyllabus({ ...syllabus, structure: n });
             };
+
+            const insertRowAfter = (idx) => {
+            const newRow = {
+                level: syllabus.structure[idx].level, // kế thừa level
+                title: '',
+                clo: syllabus.structure[idx].clo || 'HP1',
+                isTest: false,
+                lt: 0, tl: 0, thn: 0, thd: 0, bt: 0, kt: 0, extra: 0,
+                material: []
+            };
+
+            const newStructure = [...syllabus.structure];
+            newStructure.splice(idx + 1, 0, newRow);
+
+            setSyllabus({ ...syllabus, structure: newStructure });
+            };
+
 
             const getAvailableMaterials = () => {
                 const res = [];
@@ -896,7 +1330,13 @@ const exportWord = async () => {
                                                         const isSection = item.level > 0;
                                                         
                                                         return (
-                                                            <tr key={idx} className={`border-b hover:bg-slate-50 transition-all ${isLesson ? 'level-0' : item.level === 1 ? 'bg-slate-50/50' : 'italic text-slate-500'}`}>
+                                                            <tr
+                                                                key={idx}
+                                                                className={`group border-b hover:bg-slate-50 transition-all ${
+                                                                    isLesson ? 'level-0' : item.level === 1 ? 'bg-slate-50/50' : 'italic text-slate-500'
+                                                                }`}
+                                                                >
+
                                                                 <td className="p-1 border-r text-center">
                                                                     <div className="flex flex-col gap-0.5">
                                                                         <button disabled={!canEditThis} onClick={() => changeLevel(idx, -1)} className="hover:text-blue-600 transition-colors"><Icons.ArrowLeft /></button>
@@ -958,9 +1398,38 @@ const exportWord = async () => {
                                                                         </div>
                                                                     ) : <span className="text-slate-300 block text-center">-</span>}
                                                                 </td>
-                                                                <td className="p-1 text-center">
-                                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, structure: syllabus.structure.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>}
+                                                                <td className="p-1 text-center relative">
+                                                                <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+
+                                                                    {/* ➕ Thêm dòng */}
+                                                                    {canEditThis && (
+                                                                    <button
+                                                                        onClick={() => insertRowAfter(idx)}
+                                                                        className="text-green-500 hover:text-green-700"
+                                                                        title="Thêm dòng phía dưới"
+                                                                    >
+                                                                        <Icons.Plus />
+                                                                    </button>
+                                                                    )}
+
+                                                                    {/* 🗑️ Xóa dòng */}
+                                                                    {canEditThis && (
+                                                                    <button
+                                                                        onClick={() =>
+                                                                        setSyllabus({
+                                                                            ...syllabus,
+                                                                            structure: syllabus.structure.filter((_, i) => i !== idx)
+                                                                        })
+                                                                        }
+                                                                        className="text-slate-300 hover:text-red-500"
+                                                                        title="Xóa dòng"
+                                                                    >
+                                                                        <Icons.Trash />
+                                                                    </button>
+                                                                    )}
+                                                                </div>
                                                                 </td>
+
                                                             </tr>
                                                         );
                                                     })}
@@ -982,115 +1451,232 @@ const exportWord = async () => {
                                     </div>
                                 )}
 
-                                {activeTab === 'teaching' && (
-                                            <div className="space-y-6 animate-fade-in">
-                                                <h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. KẾ HOẠCH VÀ PHƯƠNG PHÁP DẠY HỌC</h3>
-                                                <div className="overflow-x-auto border rounded-xl shadow-lg bg-white">
-                                                    <table className="w-full text-[13px] text-left border-collapse font-times">
-                                                        <thead className="bg-slate-50 font-bold border-b text-slate-600">
-                                                            <tr>
-                                                                <th className="p-3 border-r w-40">Bài học (Số tiết)</th>
-                                                                <th className="p-3 border-r">Nội dung</th>
-                                                                <th className="p-3 border-r w-24 text-center">CĐR</th>
-                                                                <th className="p-3 border-r w-40">Giảng viên</th>
-                                                                <th className="p-3 border-r w-40">Học viên</th>
-                                                                <th className="p-3 w-40 text-center">Bài kiểm tra thi</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-  {syllabus.structure.map((item, idx) => {
-    // Chỉ lấy BÀI (level 0), bỏ section & test
-    if (item.level !== 0 || item.isTest) return null;
+                               {activeTab === 'teaching' && (
+  <div className="space-y-6 animate-fade-in">
+    <h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">
+      VI. KẾ HOẠCH VÀ PHƯƠNG PHÁP DẠY HỌC
+    </h3>
 
-    const lessonKey = getAutoSTT(idx); // "1", "2", ...
-    const plan = syllabus.teachingPlan?.[lessonKey] || {};
+    <div className="overflow-x-auto border rounded-xl shadow-lg bg-white">
+    <table className="w-full text-[15px] text-left border-collapse font-times">
 
-    return (
-      <tr key={`plan-${lessonKey}`} className="border-b hover:bg-slate-50 transition-all">
+        {/* === CHUẨN THEO FILE WORD === */}
+        <colgroup>
+          <col style={{ width: "9%" }} />
+          <col style={{ width: "26%" }} />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "25%" }} />
+          <col style={{ width: "25%" }} />
+          <col style={{ width: "8%" }} />
+        </colgroup>
 
-        {/* Cột 1: Bài học */}
-        <td className="p-2 border-r font-bold text-blue-900 bg-slate-50/30">
-          Bài {lessonKey} ({item.lt || 0} tiết)
-        </td>
 
-        {/* Cột 2: Nội dung */}
-        <td className="p-2 border-r italic text-slate-700">
-          {item.title}
-        </td>
 
-        {/* Cột 3: CĐR */}
-        <td className="p-2 border-r text-center font-mono">
-          {item.clo}
-        </td>
+        <thead className="bg-slate-50 font-bold border-b text-slate-600">
+          <tr>
+            <th className="p-3 border-r text-center">Bài học<br />(Số tiết)</th>
+            <th className="p-3 border-r">Nội dung</th>
+            <th className="p-3 border-r text-center">CĐR</th>
+            <th className="p-3 border-r">Giảng viên</th>
+            <th className="p-3 border-r">Học viên</th>
+            <th className="p-3 text-center">KT, thi</th>
+          </tr>
+        </thead>
 
-        {/* Cột 4: Giảng viên */}
-        <td className="p-2 border-r">
-          <textarea
-            rows="2"
-            className="w-full bg-transparent outline-none border-none p-1 focus:bg-white transition-all rounded"
-            value={plan.instructor || ''}
-            onChange={e =>
-              updateTeachingPlanField(lessonKey, 'instructor', e.target.value)
-            }
-            placeholder="Giảng viên thực hiện"
-          />
-        </td>
+        <tbody>
+          {syllabus.structure.map((item, idx) => {
+            // Chỉ render BÀI (level 0), bỏ test
+            if (item.level !== 0 || item.isTest) return null;
 
-        {/* Cột 5: Học viên */}
-        <td className="p-2 border-r">
-          <textarea
-            rows="2"
-            className="w-full bg-transparent outline-none border-none p-1 focus:bg-white transition-all rounded"
-            value={plan.student || ''}
-            onChange={e =>
-              updateTeachingPlanField(lessonKey, 'student', e.target.value)
-            }
-            placeholder="Hoạt động học viên"
-          />
-        </td>
+            const lessonKey = getAutoSTT(idx);
+            const plan = syllabus.teachingPlan?.[lessonKey] || {};
 
-        {/* Cột 6: Kiểm tra */}
-        <td className="p-2 text-center">
-          <input
-            className="w-full bg-transparent outline-none border-none p-1 text-center font-bold text-red-600 focus:bg-white transition-all rounded"
-            value={plan.exam || ''}
-            onChange={e =>
-              updateTeachingPlanField(lessonKey, 'exam', e.target.value)
-            }
-            placeholder="KT"
-          />
-        </td>
+            // Gom tiểu mục 1.1, 1.2, 1.3...
+            const subItems = getLessonSubItems(syllabus.structure, idx);
 
-      </tr>
-    );
-  })}
-</tbody>
+            return (
+              <tr
+                key={`plan-${lessonKey}`}
+                className="border-b hover:bg-slate-50 transition-all align-top"
+              >
+                {/* CỘT 1: BÀI */}
+                <td className="p-2 border-r text-center font-bold text-blue-900 bg-slate-50/30 whitespace-nowrap">
+                  Bài {lessonKey}
+                  <div className="text-xs font-normal text-slate-500">
+                    ({calculateRowTotal(idx)} tiết)
+                  </div>
+                </td>
 
-                                                    </table>
-                                                </div>
-                                                <p className="text-[10px] text-slate-400 italic">
-                                                    * Dữ liệu các cột 1, 2, 3 được đồng bộ tự động từ Mục 5. Cấu trúc học phần.
-                                                </p>
-                                            </div>
-                                        )}
+                {/* CỘT 2: NỘI DUNG */}
+                <td className="p-2 border-r text-slate-700 break-words">
+                  <div className="font-semibold">
+                    {lessonKey}. {item.title}
+                  </div>
 
-                                {activeTab === 'assessment' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VII. Đánh giá kết quả học tập</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: `A${syllabus.assessments.length+1}.1`, type: '', method: '', weight: '10%'}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm tiêu chí</button></div>
-                                        <div className="space-y-4">
-                                            {syllabus.assessments.map((ass, i) => (
-                                                <div key={i} className="flex gap-4 items-center bg-slate-50/80 p-5 rounded-3xl border border-slate-100 group shadow-sm hover:bg-white hover:border-blue-200 transition-all">
-                                                    <div className="w-16"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Mã</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center font-bold bg-white shadow-sm shadow-inner" value={ass.code} onChange={e => { const n = [...syllabus.assessments]; n[i].code = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
-                                                    <div className="flex-1 space-y-3">
-                                                        <div className="grid grid-cols-2 gap-3"><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 font-times shadow-inner" value={ass.method} placeholder="Phương pháp đánh giá..." onChange={e => { const n = [...syllabus.assessments]; n[i].method = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 font-times shadow-inner" value={ass.criteria} placeholder="Tiêu chí đánh giá..." onChange={e => { const n = [...syllabus.assessments]; n[i].criteria = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
-                                                    </div>
-                                                    <div className="w-16 text-center"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Trọng số</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center text-blue-600 font-bold bg-white shadow-inner" value={ass.weight} onChange={e => { const n = [...syllabus.assessments]; n[i].weight = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
-                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, assessments: syllabus.assessments.filter((_, idx) => idx !== i)})} className="mt-4 text-slate-300 hover:text-red-500 p-2 transition-all"><Icons.Trash /></button>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                  {subItems.length > 0 && (
+                    <ul className="mt-1 ml-4 list-disc text-[12px] space-y-0.5">
+                      {subItems.map((sub, i) => (
+                        <li key={i} className="italic">
+                          {sub}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </td>
+
+                {/* CỘT 3: CĐR */}
+                <td className="p-2 border-r text-center font-mono whitespace-nowrap">
+                  {item.clo}
+                </td>
+
+                {/* CỘT 4: GIẢNG VIÊN */}
+                <td className="p-2 border-r">
+                  <textarea
+                    rows="3"
+                    className="w-full resize-none bg-transparent outline-none border border-dashed border-slate-300 p-1 focus:bg-white rounded"
+                    value={plan.instructor || ''}
+                    onChange={e =>
+                      updateTeachingPlanField(lessonKey, 'instructor', e.target.value)
+                    }
+                    placeholder="Hình thức, phương pháp giảng dạy..."
+                  />
+                </td>
+
+                {/* CỘT 5: HỌC VIÊN */}
+                <td className="p-2 border-r">
+                  <textarea
+                    rows="3"
+                    className="w-full resize-none bg-transparent outline-none border border-dashed border-slate-300 p-1 focus:bg-white rounded"
+                    value={plan.student || ''}
+                    onChange={e =>
+                      updateTeachingPlanField(lessonKey, 'student', e.target.value)
+                    }
+                    placeholder="Yêu cầu, hoạt động học tập..."
+                  />
+                </td>
+
+                {/* CỘT 6: KIỂM TRA */}
+                <td className="p-2 text-center whitespace-nowrap">
+                  <input
+                    className="w-full bg-transparent outline-none border border-dashed border-slate-300 p-1 text-center font-bold text-red-600 focus:bg-white rounded"
+                    value={plan.exam || ''}
+                    onChange={e =>
+                      updateTeachingPlanField(lessonKey, 'exam', e.target.value)
+                    }
+                    placeholder="A1.1"
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+
+    <p className="text-[10px] text-slate-400 italic">
+      * Dữ liệu các cột 1, 2, 3 được đồng bộ tự động từ Mục 5. Cấu trúc học phần.
+    </p>
+  </div>
+)}
+
+
+{activeTab === 'assessment' && (
+    <div className="space-y-6 animate-fade-in">
+        <h3 className="text-xl font-bold uppercase text-slate-800">
+            VII. ĐÁNH GIÁ KẾT QUẢ HỌC TẬP
+        </h3>
+
+        <div className="overflow-x-auto border rounded-xl shadow-lg bg-white">
+            <table className="w-full text-[14px] border-collapse font-times">
+                <thead className="bg-slate-100 font-bold text-slate-700">
+                    <tr>
+                        <th className="p-2 border w-40">Hình thức đánh giá</th>
+                        <th className="p-2 border w-24">Mã</th>
+                        <th className="p-2 border w-40">Thời điểm đánh giá</th>
+                        <th className="p-2 border w-48">Phương pháp đánh giá</th>
+                        <th className="p-2 border w-48">Tiêu chí đánh giá</th>
+                        <th className="p-2 border w-28 text-center">Đáp ứng CĐR</th>
+                        <th className="p-2 border w-24 text-center">Tỉ lệ (%)</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {getAssessmentRows().map((row) => {
+                        // Lấy dữ liệu từ state assessmentPlan
+                        const plan = assessmentPlan[row.examCode] || {};
+
+                        return (
+                            <tr key={row.examCode} className="hover:bg-slate-50 align-top">
+                                {/* Cột 1: Hình thức đánh giá */}
+                                <td className="p-2 border">
+                                    <input
+                                        className="w-full bg-transparent outline-none focus:bg-blue-50 px-1 rounded"
+                                        value={plan.form || ''}
+                                        disabled={!canEditThis}
+                                        onChange={e => updateAssessment(row.examCode, 'form', e.target.value)}
+                                    />
+                                </td>
+
+                                {/* Cột 2: Mã (Tự động - Cố định) */}
+                                <td className="p-2 border text-center font-mono font-bold text-blue-700 bg-slate-50">
+                                    {row.examCode}
+                                </td>
+
+                                {/* Cột 3: Thời điểm */}
+                                <td className="p-2 border">
+                                    <input
+                                        className="w-full bg-transparent outline-none focus:bg-blue-50 px-1 rounded"
+                                        value={plan.time || ''}
+                                        disabled={!canEditThis}
+                                        onChange={e => updateAssessment(row.examCode, 'time', e.target.value)}
+                                    />
+                                </td>
+
+                                {/* Cột 4: Phương pháp */}
+                                <td className="p-2 border">
+                                    <textarea
+                                        rows="2"
+                                        className="w-full bg-transparent outline-none resize-none focus:bg-blue-50 px-1 rounded"
+                                        value={plan.method || ''}
+                                        disabled={!canEditThis}
+                                        onChange={e => updateAssessment(row.examCode, 'method', e.target.value)}
+                                    />
+                                </td>
+
+                                {/* Cột 5: Tiêu chí */}
+                                <td className="p-2 border">
+                                    <textarea
+                                        rows="2"
+                                        className="w-full bg-transparent outline-none resize-none focus:bg-blue-50 px-1 rounded"
+                                        value={plan.criteria || ''}
+                                        disabled={!canEditThis}
+                                        onChange={e => updateAssessment(row.examCode, 'criteria', e.target.value)}
+                                    />
+                                </td>
+
+                                {/* Cột 6: Đáp ứng CĐR (Tự động - Cố định) */}
+                                <td className="p-2 border text-center font-bold text-indigo-700 bg-slate-50">
+                                    {row.clo}
+                                </td>
+
+                                {/* Cột 7: Tỉ lệ */}
+                                <td className="p-2 border text-center">
+                                    <input
+                                        type="text"
+                                        className="w-full text-center bg-transparent outline-none font-bold text-emerald-700 focus:bg-blue-50 rounded"
+                                        value={plan.weight || ''}
+                                        disabled={!canEditThis}
+                                        onChange={e => updateAssessment(row.examCode, 'weight', e.target.value)}
+                                    />
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    </div>
+)}
 
                                 {activeTab === 'materials' && (
                                     <div className="space-y-10 animate-fade-in">

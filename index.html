@@ -944,7 +944,7 @@ const exportWord = async () => {
                                                         <tbody>
                                                             {syllabus.structure.map((item, idx) => (
                                                                 <tr key={idx} className="border-b hover:bg-slate-50 transition-all">
-                                                                    {/* Cột 1: Bài học - Lấy tự động STT và LT */}
+                                                                    {/* Cột 1: Bài học - Lấy từ Nội dung Sec 5 nếu Phân cấp 1 (Level 0) */}
                                                                     <td className="p-2 border-r font-bold text-blue-900 bg-slate-50/30">
                                                                         {item.level === 0 ? `Bài ${item.stt} (${item.lt})` : ''}
                                                                     </td>
@@ -954,7 +954,7 @@ const exportWord = async () => {
                                                                     </td>
                                                                     {/* Cột 3: CĐR - Lấy từ LT Sec 5 */}
                                                                     <td className="p-2 border-r text-center font-mono">
-                                                                        {item.level === 0 ?item.clo}
+                                                                        {item.clo}
                                                                     </td>
                                                                     {/* Cột 4: Giảng viên - Nhập thủ công */}
                                                                     <td className="p-2 border-r">

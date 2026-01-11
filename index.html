@@ -420,7 +420,13 @@ const exportWord = async () => {
         }),
         new Paragraph({ text: "" })
     );
-
+    // Cập nhật giá trị cột nhập thủ công trong Phần 6
+    const updateTeachingPlanField = (idx, field, value) => {
+        const newPlan = [...syllabus.teachingPlan];
+            if (!newPlan[idx]) newPlan[idx] = { instructor: '', student: '', exam: '' };
+                newPlan[idx][field] = value;
+                setSyllabus({ ...syllabus, teachingPlan: newPlan });
+    };
     // 7. CÁC MỤC CÒN LẠI (VI - IX)
     const addFullSection = (num, title, content) => {
         sections.push(

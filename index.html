@@ -354,7 +354,7 @@ const exportWord = async () => {
             rows: [
                 new TableRow({
                     children: [
-                        createCell("CLO", { bold: true }),
+                        createCell("Chuẩn đầu ra học phần", { bold: true }),
                         ...syllabus.cloMatrix.plos.map(p => createCell(p, { bold: true }))
                     ]
                 }),
@@ -366,7 +366,7 @@ const exportWord = async () => {
                 })),
                 new TableRow({
                     children: [
-                        createCell("Môn học", { bold: true }),
+                        createCell(syllabus.info.name, { bold: true }),
                         ...syllabus.cloMatrix.plos.map(p => createCell(calculatePloSummary(p), { bold: true }))
                     ]
                 })
@@ -568,14 +568,14 @@ const exportWord = async () => {
                 return res;
             };
 
-            if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500 animate-pulse">SyllabusPro đang khởi động...</div>;
+            if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500 animate-pulse">Chương trình đang khởi động...</div>;
 
             return (
                 <div className="flex h-screen bg-slate-100 font-inter text-sm select-none">
                     {/* Sidebar */}
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                            <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">SyllabusPro</h1>
+                            <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">CTĐT</h1>
                         </div>
                         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
                             <div className="flex flex-col gap-1 mb-6">
@@ -712,7 +712,7 @@ const exportWord = async () => {
                                 {activeTab === 'clos' && (
                                     <div className="space-y-10 animate-fade-in">
                                         <section>
-                                            <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4 tracking-tighter">III. Chuẩn đầu ra (CLO)</h3>
+                                            <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4 tracking-tighter">III. Chuẩn đầu ra</h3>
                                             <div className="space-y-2">
                                                 {syllabus.clos.map((c, idx) => (
                                                     <div key={idx} className="flex gap-2 group animate-fade-in">
@@ -731,7 +731,7 @@ const exportWord = async () => {
                                                     <button onClick={() => {
                                                         const newPLO = `PLO ${syllabus.cloMatrix.plos.length + 1}`;
                                                         setSyllabus(prev => ({...prev, cloMatrix: {...prev.cloMatrix, plos: [...prev.cloMatrix.plos, newPLO]}}));
-                                                    }} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100">+ Thêm cột PLO</button>
+                                                    }} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100">+ Thêm cột</button>
                                                 )}
                                             </div>
                                             <div className="overflow-x-auto border rounded-xl shadow-sm bg-white">

@@ -578,7 +578,7 @@ const exportWord = async () => {
                     {/* Sidebar */}
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                            <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">CTĐT</h1>
+                            <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">CTĐT-SQKT</h1>
                         </div>
                         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
                             <div className="flex flex-col gap-1 mb-6">
@@ -586,9 +586,9 @@ const exportWord = async () => {
                                     { id: 'info', label: '1. Thông tin chung', icon: Icons.Info },
                                     { id: 'objectives', label: '2. Mục tiêu', icon: Icons.Target },
                                     { id: 'clos', label: '3. Chuẩn đầu ra', icon: Icons.CLO },
-                                    { id: 'description', label: '4. Mô tả học phần', icon: Icons.Description },
-                                    { id: 'structure', label: '5. Cấu trúc học phần', icon: Icons.Layers },
-                                    { id: 'teaching', label: '6. Kế hoạch dạy học', icon: Icons.Calendar },
+                                    { id: 'description', label: '4. Mô tả', icon: Icons.Description },
+                                    { id: 'structure', label: '5. Cấu trúc', icon: Icons.Layers },
+                                    { id: 'teaching', label: '6. Kế hoạch', icon: Icons.Calendar },
                                     { id: 'assessment', label: '7. Đánh giá', icon: Icons.Assessment },
                                     { id: 'materials', label: '8. Tài liệu', icon: Icons.Materials },
                                     { id: 'regulations', label: '9. Quy định', icon: Icons.User }
@@ -600,7 +600,7 @@ const exportWord = async () => {
                             </div>
                             
                             <div className="pt-4 border-t border-slate-800 space-y-2">
-                                <h3 className="text-[10px] text-slate-500 uppercase font-bold mb-2 px-2 tracking-widest">Học phần đã lưu</h3>
+                                <h3 className="text-[10px] text-slate-500 uppercase font-bold mb-2 px-2 tracking-widest">Danh sách học phần</h3>
                                 {savedSyllabi.map(s => (
                                     <div key={s.id} onClick={() => setSyllabus(s)} className={`group relative p-3 rounded-xl cursor-pointer border text-xs transition-all ${syllabus.id === s.id ? 'bg-slate-800 border-blue-500 shadow-inner' : 'border-transparent hover:bg-slate-800/50'}`}>
                                         <div className="pr-6">
@@ -620,7 +620,7 @@ const exportWord = async () => {
                                     <button onClick={() => window.fb.signOut(fbAuthRef.current)} className="text-slate-500 hover:text-white"><Icons.Logout /></button>
                                 </div>
                             ) : (
-                                <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Icons.Google /> Login Gmail</button>
+                                <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Icons.Google /> Đăng nhập Gmail</button>
                             )}
                         </div>
                     </aside>
@@ -708,7 +708,7 @@ const exportWord = async () => {
                                 {activeTab === 'objectives' && (
                                     <div className="space-y-4 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">II. Mục tiêu học phần</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Kiến thức, kỹ năng, thái độ..." />
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Nêu rõ mục tiêu cần đạt được đối với người học sau khi học xong học phần về kiến thức, kỹ năng, mức tự chủ trách nhiệm. Thể hiện sự tương quan với các chuẩn đầu ra của chương trình đào tạo" />
                                     </div>
                                 )}
 
@@ -788,8 +788,9 @@ const exportWord = async () => {
                                                 </table>
                                             </div>
                                             <p className="mt-3 text-[10px] text-slate-400 italic font-times">
-                                                * Chú thích mức độ: I (Giới thiệu), R (Phát triển), M (Đạt trình độ), A (Đánh giá).<br/>
-                                                ** Dòng Học phần: Tổng hợp mức độ cao nhất theo quy trình I &lt; R &lt; M và kết hợp đánh giá A.
+                                                * Chỉ liệt kê các CĐRCTĐT/CB thực sự hỗ trợ, đóng góp..<br/>
+                                                ** Ghi rõ mức độ đóng góp: I, R, M và học phần A.<br/>
+                                                *** Hàng cuối cùng: tổng hợp mức đóng góp cao nhất tương ứng với từng cột CĐRCTĐT/CB (Tự động)
                                             </p>
                                         </section>
                                     </div>

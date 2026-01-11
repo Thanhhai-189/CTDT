@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro V4.0 - Restore & Preview</title>
+    <title>SyllabusPro V3.9 - Auto Matrix Logic</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -38,35 +38,17 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .font-times { font-family: "Times New Roman", Times, serif; }
-        
-        /* Cấu hình trang xem trước (Document Mode) */
-        .preview-mode {
-            font-family: "Times New Roman", Times, serif !important;
-            font-size: 18.6px !important; /* Xấp xỉ font 14pt */
-            line-height: 1.3 !important;
-            text-align: justify;
-        }
-        .preview-mode input, .preview-mode textarea {
-            border: none !important;
-            background: transparent !important;
-            padding: 0 !important;
-            width: 100%;
-            display: block;
-            font-family: inherit !important;
-            font-size: inherit !important;
-            box-shadow: none !important;
-            height: auto !important;
-            resize: none;
-            outline: none;
-        }
-        .preview-mode .indent-line {
-            padding-left: 1cm;
-        }
-
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Cstyles cho Mục 5 */
+        .level-0 { font-weight: 700; color: #1e293b; background-color: #f8fafc; text-transform: uppercase; }
+        .table-input { width: 100%; text-align: center; background: transparent; border: none; outline: none; padding: 4px 0; font-size: 13px; }
+        .table-input:focus { background: #eff6ff; }
+        .table-input:disabled { color: #1e40af; font-weight: bold; background: #f1f5f9; cursor: not-allowed; }
+        .sticky-footer { position: sticky; bottom: 0; background: #f1f5f9; z-index: 10; font-weight: bold; border-top: 2px solid #cbd5e1; }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -92,7 +74,8 @@
             Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
             Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
             User: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-            Eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            ArrowLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m11 17-5-5 5-5"/><path d="M18 12H6"/></svg>,
+            ArrowRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         };
 
         const FIREBASE_CONFIG = {
@@ -119,7 +102,7 @@
             structure: [],
             teachingPlan: [],
             assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', criteria: 'Chuyên cần, kiến thức', weight: '10%', clo: 'HP1' }],
-            materials: '', 
+            materials: { required: [''], reference: [''], equipment: '' },
             regulations: ''
         };
 
@@ -131,7 +114,6 @@
             const [userRole, setUserRole] = useState('checking...'); 
             const [loading, setLoading] = useState(true);
             const [isSaving, setIsSaving] = useState(false);
-            const [isPreviewMode, setIsPreviewMode] = useState(false);
             
             const fbAppRef = useRef(null);
             const fbDbRef = useRef(null);
@@ -197,9 +179,11 @@
                 setSyllabus(prev => {
                     const newCredits = { ...prev.info.credits, [field]: val };
                     newCredits.total = (newCredits.theory || 0) + (newCredits.practice || 0) + (newCredits.internship || 0);
+                    
                     const hTheory = newCredits.theory * 15;
                     const hPractice = newCredits.practice * 30;
                     const hInternship = newCredits.internship * 45;
+                    
                     const newHours = { 
                         ...prev.info.hours,
                         theory: hTheory,
@@ -207,9 +191,22 @@
                         classroom: hTheory + hPractice + hInternship,
                         selfStudy: newCredits.total * 30 
                     };
+                    
                     return { ...prev, info: { ...prev.info, credits: newCredits, hours: newHours } };
                 });
             };
+
+            // Thành phần Stepper để điều chỉnh số tín chỉ
+            const CreditStepper = ({ label, field, value }) => (
+                <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
+                    <div className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg overflow-hidden h-10 shadow-sm">
+                        <button onClick={() => handleCreditChange(field, value - 1)} disabled={!canEditThis} className="w-10 h-full hover:bg-red-50 text-red-600 border-r border-blue-100 font-bold disabled:opacity-30">-</button>
+                        <div className="flex-1 text-center font-bold text-sm text-blue-700">{value}</div>
+                        <button onClick={() => handleCreditChange(field, value + 1)} disabled={!canEditThis} className="w-10 h-full hover:bg-emerald-50 text-emerald-600 border-l border-blue-100 font-bold disabled:opacity-30">+</button>
+                    </div>
+                </div>
+            );
 
             const saveToCloud = async () => {
                 if (!user) return alert("Vui lòng đăng nhập.");
@@ -230,195 +227,353 @@
             const handleDuplicate = () => {
                 if (!user) return alert("Vui lòng đăng nhập Gmail để nhân bản.");
                 if (!isAdmin && !isEditor) return alert("Bạn không có quyền thực hiện chức năng này.");
+                if (!syllabus.info.code) return alert("Học phần hiện tại chưa có thông tin để nhân bản.");
+
                 const duplicatedSyllabus = JSON.parse(JSON.stringify(syllabus));
                 duplicatedSyllabus.id = ''; 
                 duplicatedSyllabus.info.code = `${duplicatedSyllabus.info.code}-copy`;
                 duplicatedSyllabus.ownerUid = user.uid;
                 duplicatedSyllabus.ownerEmail = user.email;
+
                 setSyllabus(duplicatedSyllabus);
-                alert("Đã nhân bản thành công!");
+                alert("Đã nhân bản thành công! Bạn hiện là chủ sở hữu bản sao này.");
             };
 
-            const exportWord = async () => {
-                const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } = window.docx;
+const exportWord = async () => {
+    const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } = window.docx;
 
-                const STYLES = {
-                    font: "Times New Roman",
-                    size: 28, // 14pt
-                    alignment: AlignmentType.JUSTIFIED,
-                    spacing: { before: 120, after: 120, line: 240 }, 
-                    indent: { firstLine: 567 } 
-                };
+    // --- CẤU HÌNH ĐỊNH DẠNG CHUẨN SQKT ---
+    // font: Times New Roman
+    // size: 28 (docx dùng half-points, 14pt * 2 = 28)
+    // alignment: Justified (Căn đều hai bên)
+    // spacing: before/after 6pt (120 twips), line spacing single (240 twips)
+    // indent: firstLine 1cm (~567 twips)
+    const STYLES = {
+        font: "Times New Roman",
+        size: 28, 
+        alignment: AlignmentType.JUSTIFIED,
+        spacing: { before: 120, after: 120, line: 240 }, 
+        indent: { firstLine: 567 } 
+    };
 
-                const createCell = (text, options = {}) => new TableCell({
-                    children: [new Paragraph({ 
-                        children: [new TextRun({ text: String(text || ""), bold: options.bold, size: STYLES.size, font: STYLES.font })],
-                        alignment: options.alignment || AlignmentType.CENTER
-                    })],
-                    verticalAlign: VerticalAlign.CENTER,
-                    width: options.width
-                });
+    // Hàm tiện ích tạo ô trong bảng
+    const createCell = (text, options = {}) => new TableCell({
+        children: [new Paragraph({ 
+            children: [new TextRun({ text: text || "", bold: options.bold, size: STYLES.size, font: STYLES.font })],
+            alignment: options.alignment || AlignmentType.CENTER
+        })],
+        verticalAlign: VerticalAlign.CENTER,
+        shading: options.shading,
+        width: options.width,
+        borders: options.borders
+    });
 
-                const createTextPara = (text, options = {}) => new Paragraph({
-                    children: [new TextRun({ text: text || "", bold: options.bold, italic: options.italic, size: STYLES.size, font: STYLES.font })],
-                    alignment: options.alignment || STYLES.alignment,
-                    spacing: options.spacing || STYLES.spacing,
-                    indent: options.noIndent ? undefined : (options.indent || STYLES.indent)
-                });
+    // Hàm tiện ích tạo đoạn văn bản có thụt lề 1cm và định dạng chuẩn
+    const createTextPara = (text, options = {}) => new Paragraph({
+        children: [new TextRun({ text: text || "", bold: options.bold, italic: options.italic, size: STYLES.size, font: STYLES.font })],
+        alignment: options.alignment || STYLES.alignment,
+        spacing: options.spacing || STYLES.spacing,
+        indent: options.noIndent ? undefined : (options.indent || STYLES.indent)
+    });
 
-                const sections = [];
+    const sections = [];
 
-                // Header
-                sections.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({ text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", bold: true, size: 24, font: STYLES.font }),
-                            new TextRun({ text: "\t\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: STYLES.font })
-                        ],
-                    }),
-                    new Paragraph({
-                        children: [
-                            new TextRun({ text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", bold: true, size: 24, font: STYLES.font }),
-                            new TextRun({ text: "\t\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: STYLES.font })
-                        ],
-                    }),
-                    new Paragraph({ text: "", spacing: { before: 400 } }),
-                    new Paragraph({
-                        children: [new TextRun({ text: "ĐỀ CƯƠNG HỌC PHẦN", bold: true, size: 32, font: STYLES.font })],
-                        alignment: AlignmentType.CENTER,
-                    }),
-                    new Paragraph({ text: "", spacing: { before: 400 } })
-                );
+    // 1. PHẦN TIÊU ĐỀ (TRƯỜNG, KHOA, QUỐC HIỆU)
+    sections.push(
+        new Paragraph({
+            children: [
+                new TextRun({ text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", bold: true, size: 24, font: STYLES.font }),
+                new TextRun({ text: "\t\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: STYLES.font })
+            ],
+        }),
+        new Paragraph({
+            children: [
+                new TextRun({ text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", bold: true, size: 24, font: STYLES.font }),
+                new TextRun({ text: "\t\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: STYLES.font })
+            ],
+        }),
+        new Paragraph({ text: "", spacing: { before: 400 } }),
+        new Paragraph({
+            children: [new TextRun({ text: "ĐỀ CƯƠNG HỌC PHẦN", bold: true, size: 32, font: STYLES.font })],
+            alignment: AlignmentType.CENTER,
+        }),
+        new Paragraph({ text: "", spacing: { before: 400 } })
+    );
 
-                // Section 1
-                sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
-                    createTextPara(`Học phần: ${syllabus.info.name}`),
-                    createTextPara(`Mã học phần: ${syllabus.info.code}`),
-                    createTextPara(`Chuyên ngành: ${syllabus.info.major}`),
-                    createTextPara(`Loại học phần: ${syllabus.info.type}`),
-                    createTextPara(`Học phần trước: ${syllabus.info.prerequisites || "Không"}`),
-                    createTextPara(`Học phần song hành: ${syllabus.info.parallel || "Không"}`),
-                    createTextPara(`Số tín chỉ: ${syllabus.info.credits.total}`),
-                    createTextPara(`Số tiết: ${syllabus.info.hours.classroom + syllabus.info.hours.exam}`),
-                    createTextPara(`- Số tiết lên lớp: ${syllabus.info.hours.classroom}`, { indent: { left: 708 } }),
-                    createTextPara(`+ Lý thuyết: ${syllabus.info.hours.theory}`, { indent: { left: 1134 } }),
-                    createTextPara(`+ Thực hành, thí nghiệm, bài tập, thảo luận: ${syllabus.info.hours.practice}`, { indent: { left: 1134 } }),
-                    createTextPara(`- Thi, kiểm tra kết thúc: ${syllabus.info.hours.exam}`, { indent: { left: 708 } }),
-                    createTextPara(`- Số tiết tự học: ${syllabus.info.hours.selfStudy}`, { indent: { left: 708 } }),
-                    createTextPara(`Bộ môn, khoa tham gia giảng dạy: ${syllabus.info.contact}`),
-                    new Paragraph({ text: "" })
-                );
+    // 2. MỤC I: THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN
+    sections.push(
+        new Paragraph({ children: [new TextRun({ text: "I. THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        createTextPara(`Học phần: ${syllabus.info.name}`),
+        createTextPara(`Mã học phần: ${syllabus.info.code}`),
+        createTextPara(`Chuyên ngành: ${syllabus.info.major}`),
+        createTextPara(`Loại học phần: ${syllabus.info.type}`),
+        createTextPara(`Học phần trước: ${syllabus.info.prerequisites || "Không"}`),
+        createTextPara(`Học phần song hành: ${syllabus.info.parallel || "Không"}`),
+        createTextPara(`Số tín chỉ: ${syllabus.info.credits.total}`),
+        createTextPara(`Số tiết: ${calculateGrandTotal('total')}`),
+        createTextPara(`- Số tiết lên lớp: ${syllabus.info.hours.classroom}`, { indent: { left: 708 } }),
+        createTextPara(`+ Lý thuyết: ${syllabus.info.hours.theory}`, { indent: { left: 1134 } }),
+        createTextPara(`+ Thực hành, thí nghiệm, bài tập, thảo luận: ${syllabus.info.hours.practice}`, { indent: { left: 1134 } }),
+        createTextPara(`- Thi, kiểm tra kết thúc: ${syllabus.info.hours.exam}`, { indent: { left: 708 } }),
+        createTextPara(`- Số tiết tự học: ${syllabus.info.hours.selfStudy}`, { indent: { left: 708 } }),
+        createTextPara(`Bộ môn, khoa tham gia giảng dạy: ${syllabus.info.contact}`),
+        
+            );
 
-                // Sections 2-4
-                sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
-                    createTextPara(syllabus.objectives),
-                    new Paragraph({ text: "" }),
-                    new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA (CLO)", bold: true, size: STYLES.size, font: STYLES.font })] }),
-                    new Table({
-                        width: { size: 100, type: WidthType.PERCENTAGE },
-                        rows: [
-                            new TableRow({ children: [createCell("Ký hiệu", {bold:true}), createCell("Nội dung chuẩn đầu ra", {bold:true, alignment: AlignmentType.LEFT})] }),
-                            ...syllabus.clos.map(c => new TableRow({ children: [createCell(c.id), createCell(c.content, {alignment: AlignmentType.LEFT})] }))
-                        ]
-                    }),
-                    new Paragraph({ text: "", spacing: { before: 200 } }),
-                    createTextPara("Ma trận đóng góp chuẩn đầu ra học phần đối với CTĐT:", {italic:true}),
-                    new Table({
-                        width: { size: 100, type: WidthType.PERCENTAGE },
-                        rows: [
-                            new TableRow({ children: [createCell("CLO"), ...syllabus.cloMatrix.plos.map(p => createCell(p, {bold:true}))] }),
-                            ...syllabus.clos.map(c => new TableRow({ children: [createCell(c.id, {bold:true}), ...syllabus.cloMatrix.plos.map(p => createCell(syllabus.cloMatrix.mapping[c.id]?.[p] || "-"))] })),
-                            new TableRow({ children: [createCell("Môn học", {bold:true}), ...syllabus.cloMatrix.plos.map(p => createCell(calculatePloSummary(p), {bold:true}))] })
-                        ]
-                    }),
-                    new Paragraph({ text: "" }),
-                    new Paragraph({ children: [new TextRun({ text: "IV. MÔ TẢ HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
-                    createTextPara(syllabus.description),
-                    new Paragraph({ text: "" })
-                );
+    // 3. MỤC II: MỤC TIÊU
+    sections.push(
+        new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        createTextPara(syllabus.objectives || "Chưa nhập thông tin."),
+        new Paragraph({ text: "" })
+    );
 
-                // Section 5
-                sections.push(
-                    new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
-                    new Table({
-                        width: { size: 100, type: WidthType.PERCENTAGE },
-                        rows: [
-                            new TableRow({ children: [createCell("STT"), createCell("Nội dung bài học"), createCell("CĐR"), createCell("LT"), createCell("TH"), createCell("Học liệu")] }),
-                            ...syllabus.structure.map((r, i) => new TableRow({
-                                children: [
-                                    createCell(r.stt),
-                                    createCell(r.title, { alignment: AlignmentType.LEFT }),
-                                    createCell(r.clo),
-                                    createCell(r.lt),
-                                    createCell(r.th),
-                                    createCell(r.material)
-                                ]
-                            }))
-                        ]
-                    }),
-                    new Paragraph({ text: "" })
-                );
+    // 4. MỤC III: CHUẨN ĐẦU RA & MA TRẬN
+    sections.push(
+        new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA (CLO)", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+                new TableRow({
+                    children: [
+                        createCell("Ký hiệu", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
+                        createCell("Nội dung chuẩn đầu ra", { bold: true, width: { size: 85, type: WidthType.PERCENTAGE } })
+                    ]
+                }),
+                ...syllabus.clos.map(c => new TableRow({
+                    children: [
+                        createCell(c.id, { alignment: AlignmentType.CENTER }),
+                        createCell(c.content, { alignment: AlignmentType.LEFT })
+                    ]
+                }))
+            ]
+        }),
+        new Paragraph({ text: "", spacing: { before: 200 } }),
+        createTextPara("Ma trận đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:", { italic: true }),
+        new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+                new TableRow({
+                    children: [
+                        createCell("CLO", { bold: true }),
+                        ...syllabus.cloMatrix.plos.map(p => createCell(p, { bold: true }))
+                    ]
+                }),
+                ...syllabus.clos.map(c => new TableRow({
+                    children: [
+                        createCell(c.id, { bold: true }),
+                        ...syllabus.cloMatrix.plos.map(p => createCell(syllabus.cloMatrix.mapping[c.id]?.[p] || "-"))
+                    ]
+                })),
+                new TableRow({
+                    children: [
+                        createCell("Môn học", { bold: true }),
+                        ...syllabus.cloMatrix.plos.map(p => createCell(calculatePloSummary(p), { bold: true }))
+                    ]
+                })
+            ]
+        }),
+        new Paragraph({ text: "" })
+    );
 
-                // VI-IX
-                const addS = (t, c) => {
-                    sections.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: STYLES.size, font: STYLES.font })] }), createTextPara(c), new Paragraph({ text: "" }));
-                };
-                addS("VI. KẾ HOẠCH DẠY HỌC CHI TIẾT", syllabus.teachingPlan?.map(p => `${p.title}: GV: ${p.instructor}, HV: ${p.student}`).join("\n"));
-                addS("VII. ĐÁNH GIÁ", syllabus.assessments?.map(a => `${a.code} - ${a.method}: ${a.criteria} (${a.weight})`).join("\n"));
-                addS("VIII. TÀI LIỆU VÀ THIẾT BỊ", syllabus.materials);
-                addS("IX. QUY ĐỊNH CỦA HỌC PHẦN", syllabus.regulations);
+    // 5. MỤC IV: MÔ TẢ HỌC PHẦN
+    sections.push(
+        new Paragraph({ children: [new TextRun({ text: "IV. MÔ TẢ HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        createTextPara(syllabus.description || "Chưa nhập thông tin."),
+        new Paragraph({ text: "" })
+    );
 
-                // Signature
-                sections.push(
-                    new Paragraph({ text: "", spacing: { before: 800 } }),
-                    new Table({
-                        width: { size: 100, type: WidthType.PERCENTAGE },
-                        borders: BorderStyle.NONE,
-                        rows: [
-                            new TableRow({ children: [createCell("CHỦ NHIỆM KHOA", {bold:true}), createCell(`${syllabus.header?.city || "Tp. Hồ Chí Minh"}, ngày... tháng... năm...\nTRƯỞNG BỘ MÔN`, {bold:true})] }),
-                            new TableRow({ children: [createCell("\n\n\n\n"), createCell("\n\n\n\n")] })
-                        ]
-                    })
-                );
+    // 6. MỤC V: CẤU TRÚC HỌC PHẦN
+    sections.push(
+        new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+                new TableRow({
+                    children: [
+                        createCell("STT", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+                        createCell("Nội dung", { bold: true, width: { size: 35, type: WidthType.PERCENTAGE } }),
+                        createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+                        createCell("Tổng", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+                        createCell("LT", { bold: true }), createCell("TL", { bold: true }),
+                        createCell("TH", { bold: true }), createCell("BT", { bold: true }),
+                        createCell("KT", { bold: true }), createCell("Học liệu", { bold: true })
+                    ]
+                }),
+                ...syllabus.structure.map((it, idx) => new TableRow({
+                    children: [
+                        createCell(it.isTest ? "*" : getAutoSTT(idx)),
+                        createCell(it.title, { alignment: AlignmentType.LEFT, bold: it.level === 0 }),
+                        createCell((it.level === 0 || it.isTest) ? it.clo : "-"),
+                        createCell(calculateRowTotal(idx).toString()),
+                        createCell(getAggregatedValue(idx, 'lt').toString()),
+                        createCell(getAggregatedValue(idx, 'tl').toString()),
+                        createCell(getAggregatedValue(idx, 'thn').toString()),
+                        createCell(getAggregatedValue(idx, 'bt').toString()),
+                        createCell(getAggregatedValue(idx, 'kt').toString()),
+                        createCell(it.level === 0 ? (it.material || []).join(",") : "")
+                    ]
+                }))
+            ]
+        }),
+        new Paragraph({ text: "" })
+    );
 
-                const finalDoc = new Document({ sections: [{ children: sections }] });
-                Packer.toBlob(finalDoc).then(blob => saveAs(blob, `De_cuong_${syllabus.info.code || 'Export'}.docx`));
-            };
+    // 7. CÁC MỤC CÒN LẠI (VI - IX)
+    const addFullSection = (num, title, content) => {
+        sections.push(
+            new Paragraph({ children: [new TextRun({ text: `${num}. ${title}`, bold: true, size: STYLES.size, font: STYLES.font })] }),
+            createTextPara(content),
+            new Paragraph({ text: "" })
+        );
+    };
+
+    addFullSection("VI", "KẾ HOẠCH DẠY HỌC CHI TIẾT", syllabus.teachingPlan?.map(p => `${p.title}: Giảng viên: ${p.instructor}, Học viên: ${p.student}`).join("\n"));
+    addFullSection("VII", "ĐÁNH GIÁ", syllabus.assessments?.map(a => `${a.code} - ${a.method}: ${a.criteria} (${a.weight})`).join("\n"));
+    
+    const materialContent = `1. Học liệu bắt buộc:\n${(syllabus.materials?.required || []).join("\n")}\n2.Học liệu tham khảo:\n${(syllabus.materials?.reference || []).join("\n")}\n3. Thiết bị:\n${syllabus.materials?.equipment || ""}`;
+    addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContent);
+    addFullSection("IX", "QUY ĐỊNH CỦA HỌC PHẦN", syllabus.regulations);
+
+    // 8. PHẦN CHỮ KÝ (CHỈ CHỦ NHIỆM KHOA VÀ TRƯỞNG BỘ MÔN)
+    sections.push(
+        new Paragraph({ text: "", spacing: { before: 800 } }),
+        new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+            rows: [
+                new TableRow({
+                    children: [
+                        createCell("CHỦ NHIỆM KHOA", { bold: true, alignment: AlignmentType.CENTER }),
+                        createCell(`${syllabus.header?.city || "Tp. Hồ Chí Minh"}, ngày... tháng... năm...\nTRƯỞNG BỘ MÔN`, { bold: true, alignment: AlignmentType.CENTER })
+                    ]
+                }),
+                new TableRow({
+                    children: [
+                        new TableCell({ children: [new Paragraph({ text: "", spacing: { before: 1500 } })] }),
+                        new TableCell({ children: [new Paragraph({ text: "", spacing: { before: 1500 } })] })
+                    ]
+                })
+            ]
+        })
+    );
+
+    // TẠO VÀ TẢI FILE
+    const docObj = new Document({
+        sections: [{
+            properties: { page: { margin: { top: 720, bottom: 720, left: 1440, right: 720 } } },
+            children: sections
+        }]
+    });
+
+    Packer.toBlob(docObj).then(blob => {
+        saveAs(blob, `De_cuong_HP_${syllabus.info.code || 'Export'}.docx`);
+    });
+};
 
             const calculatePloSummary = (ploName) => {
                 const levelsRank = { "": 0, "I": 1, "R": 2, "M": 3 };
                 let maxLevelNum = 0;
                 let hasAssessment = false;
+
                 syllabus.clos.forEach(clo => {
-                    const v = (syllabus.cloMatrix.mapping[clo.id]?.[ploName] || "").toUpperCase().trim();
-                    if (!v) return;
-                    if (v.includes("A")) hasAssessment = true;
-                    if (v.includes("M")) maxLevelNum = 3; else if (v.includes("R")) maxLevelNum = Math.max(maxLevelNum, 2); else if (v.includes("I")) maxLevelNum = Math.max(maxLevelNum, 1);
+                    const cellValue = (syllabus.cloMatrix.mapping[clo.id]?.[ploName] || "").toUpperCase().trim();
+                    if (!cellValue) return;
+
+                    if (cellValue.includes("A")) hasAssessment = true;
+                    
+                    if (cellValue.includes("M")) maxLevelNum = Math.max(maxLevelNum, 3);
+                    else if (cellValue.includes("R")) maxLevelNum = Math.max(maxLevelNum, 2);
+                    else if (cellValue.includes("I")) maxLevelNum = Math.max(maxLevelNum, 1);
                 });
-                const m = { 0: "", 1: "I", 2: "R", 3: "M" };
-                const base = m[maxLevelNum];
-                return base + (base && hasAssessment ? ", A" : hasAssessment ? "A" : "");
+
+                const levelMap = { 0: "", 1: "I", 2: "R", 3: "M" };
+                const baseLevel = levelMap[maxLevelNum];
+
+                if (baseLevel && hasAssessment) return `${baseLevel}, A`;
+                if (baseLevel) return baseLevel;
+                if (hasAssessment) return "A";
+                return "";
             };
 
-            const CreditStepper = ({ label, field, value }) => (
-                <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-                    <div className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg overflow-hidden h-10 shadow-sm">
-                        <button onClick={() => handleCreditChange(field, value - 1)} disabled={!canEditThis} className="w-10 h-full hover:bg-red-50 text-red-600 border-r border-blue-100 font-bold disabled:opacity-30">-</button>
-                        <div className="flex-1 text-center font-bold text-sm text-blue-700">{value}</div>
-                        <button onClick={() => handleCreditChange(field, value + 1)} disabled={!canEditThis} className="w-10 h-full hover:bg-emerald-50 text-emerald-600 border-l border-blue-100 font-bold disabled:opacity-30">+</button>
-                    </div>
-                </div>
-            );
+            const hasChildren = (index) => {
+                const item = syllabus.structure[index];
+                if (!item || index === syllabus.structure.length - 1) return false;
+                return (syllabus.structure[index + 1]?.level || 0) > item.level;
+            };
+
+            const getAggregatedValue = (idx, field) => {
+                const item = syllabus.structure[idx];
+                if (!item) return 0;
+                const children = [];
+                for (let i = idx + 1; i < syllabus.structure.length; i++) {
+                    const nextItem = syllabus.structure[i];
+                    if (nextItem.level <= item.level) break;
+                    if (nextItem.level === item.level + 1) children.push(i);
+                }
+                if (children.length === 0) return item[field] || 0;
+                return children.reduce((sum, childIdx) => sum + getAggregatedValue(childIdx, field), 0);
+            };
+
+            const getAutoSTT = (index) => {
+                const item = syllabus.structure[index];
+                if (!item) return "";
+                if (item.isTest) return "*";
+                let bài = 0, mục = 0, tiểuMục = 0;
+                for (let i = 0; i <= index; i++) {
+                    const current = syllabus.structure[i];
+                    if (current.isTest) continue;
+                    if (current.level === 0) { bài++; mục = 0; tiểuMục = 0; }
+                    else if (current.level === 1) { mục++; tiểuMục = 0; }
+                    else if (current.level === 2) { tiểuMục++; }
+                }
+                if (item.level === 0) return bài.toString();
+                if (item.level === 1) return `${bài}.${mục}`;
+                return `${bài}.${mục}.${tiểuMục}`;
+            };
+
+            const calculateRowTotal = (idx) => {
+                const fields = ['lt', 'tl', 'thn', 'thd', 'bt', 'kt', 'extra'];
+                return fields.reduce((sum, field) => sum + getAggregatedValue(idx, field), 0);
+            };
+
+            const calculateGrandTotal = (field) => {
+                return syllabus.structure.reduce((sum, item, idx) => {
+                    if (item.level === 0) {
+                        if (field === 'total') return sum + calculateRowTotal(idx);
+                        return sum + getAggregatedValue(idx, field);
+                    }
+                    return sum;
+                }, 0);
+            };
+
+            const updateStructureField = (index, field, value) => {
+                const n = [...syllabus.structure];
+                n[index][field] = value;
+                setSyllabus({ ...syllabus, structure: n });
+            };
+
+            const changeLevel = (index, delta) => {
+                const n = [...syllabus.structure];
+                n[index].level = Math.max(0, Math.min(2, (n[index].level || 0) + delta));
+                setSyllabus({ ...syllabus, structure: n });
+            };
+
+            const getAvailableMaterials = () => {
+                const res = [];
+                const reqCount = (syllabus.materials?.required || []).length;
+                const refCount = (syllabus.materials?.reference || []).length;
+                for (let i = 1; i <= reqCount + refCount; i++) {
+                    res.push(`[${i}]`);
+                }
+                return res;
+            };
 
             if (loading) return <div className="h-screen flex items-center justify-center italic text-slate-500 animate-pulse">SyllabusPro đang khởi động...</div>;
 
             return (
                 <div className="flex h-screen bg-slate-100 font-inter text-sm select-none">
                     {/* Sidebar */}
-                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl transition-all">
+                    <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                             <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">SyllabusPro</h1>
                         </div>
@@ -435,129 +590,405 @@
                                     { id: 'materials', label: '8. Tài liệu', icon: Icons.Materials },
                                     { id: 'regulations', label: '9. Quy định', icon: Icons.User }
                                 ].map(tab => (
-                                    <button key={tab.id} onClick={() => {setActiveTab(tab.id); setIsPreviewMode(false);}} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id && !isPreviewMode ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}>
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}>
                                         <tab.icon /> {tab.label}
                                     </button>
                                 ))}
                             </div>
+                            
+                            <div className="pt-4 border-t border-slate-800 space-y-2">
+                                <h3 className="text-[10px] text-slate-500 uppercase font-bold mb-2 px-2 tracking-widest">Học phần đã lưu</h3>
+                                {savedSyllabi.map(s => (
+                                    <div key={s.id} onClick={() => setSyllabus(s)} className={`group relative p-3 rounded-xl cursor-pointer border text-xs transition-all ${syllabus.id === s.id ? 'bg-slate-800 border-blue-500 shadow-inner' : 'border-transparent hover:bg-slate-800/50'}`}>
+                                        <div className="pr-6">
+                                            <p className="font-bold text-slate-200 truncate uppercase">{s.info.name || "Môn mới"}</p>
+                                            <p className="text-[10px] text-slate-500 font-mono">{s.info.code || "---"}</p>
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); if(confirm("Xóa học phần này?")) window.fb.deleteDoc(window.fb.doc(fbDbRef.current, 'artifacts', typeof __app_id !== 'undefined' ? __app_id : 'ctdt-sqkt-app', 'public', 'data', 'syllabi', s.id)); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1"><Icons.Trash /></button>
+                                    </div>
+                                ))}
+                            </div>
                         </nav>
                         <div className="p-4 bg-slate-800/50 border-t border-slate-800">
-                            {user ? <div className="flex items-center gap-2"><img src={user.photoURL} className="w-8 h-8 rounded-full border border-blue-500" /><div className="min-w-0 flex-1"><p className="text-[10px] font-bold truncate">{user.displayName}</p><p className="text-[8px] uppercase text-emerald-400 font-bold">{userRole}</p></div><button onClick={() => window.fb.signOut(fbAuthRef.current)} className="text-slate-500 hover:text-white"><Icons.Logout /></button></div> : <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Icons.Google /> Login Gmail</button>}
+                            {user ? (
+                                <div className="flex items-center gap-2">
+                                    <img src={user.photoURL} className="w-8 h-8 rounded-full border border-blue-500" />
+                                    <div className="min-w-0 flex-1"><p className="text-[10px] font-bold truncate">{user.displayName}</p><p className="text-[8px] uppercase text-emerald-400 font-bold">{userRole}</p></div>
+                                    <button onClick={() => window.fb.signOut(fbAuthRef.current)} className="text-slate-500 hover:text-white"><Icons.Logout /></button>
+                                </div>
+                            ) : (
+                                <button onClick={handleLogin} className="w-full bg-blue-600 p-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-all"><Icons.Google /> Login Gmail</button>
+                            )}
                         </div>
                     </aside>
 
                     {/* Main Area */}
                     <main className="flex-1 flex flex-col overflow-hidden">
-                        <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm z-50">
-                            <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2 uppercase tracking-tight">
-                                {syllabus.info.name || "Soạn thảo đề cương"}
-                                {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono uppercase">{syllabus.info.code}</span>}
-                            </h2>
+                        <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
+                            <div className="flex flex-col">
+                                <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2 uppercase tracking-tight">
+                                    {syllabus.info.name || "Soạn thảo đề cương"}
+                                    {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono uppercase">{syllabus.info.code}</span>}
+                                </h2>
+                                {syllabus.ownerEmail && (
+                                    <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
+                                        <Icons.User />
+                                        <span>Người sở hữu: <span className="font-medium text-slate-500">{syllabus.ownerEmail}</span></span>
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex gap-2">
-                                <button onClick={() => setSyllabus(initialSyllabus)} className="flex items-center gap-2 bg-amber-400 text-amber-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-500"><Icons.Plus /> Tạo mới</button>
-                                <button onClick={handleDuplicate} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200"><Icons.Copy /> Nhân bản</button>
-                                <button onClick={saveToCloud} disabled={isSaving || !canEditThis} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50"><Icons.Save /> {isSaving ? "Đang lưu..." : "Lưu Cloud"}</button>
-                                
-                                {/* NÚT MỚI THÊM VÀO ĐÂY */}
-                                <button onClick={() => setIsPreviewMode(!isPreviewMode)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isPreviewMode ? 'bg-amber-500 text-white shadow-lg' : 'bg-white border border-amber-200 text-amber-600 hover:bg-amber-50'}`}>
-                                    <Icons.Eye /> {isPreviewMode ? "Đóng Xem trước" : "Chế độ Văn bản"}
+                                <button onClick={() => setSyllabus(initialSyllabus)} className="flex items-center gap-2 bg-amber-400 text-amber-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-500 shadow-lg shadow-amber-100 transition-all">
+                                    <Icons.Plus /> Tạo mới
                                 </button>
-                                
-                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700"><Icons.FileText /> Xuất Word</button>
+                                <button onClick={handleDuplicate} disabled={!isAdmin && !isEditor} className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-all"><Icons.Copy /> Nhân bản</button>
+                                <button onClick={saveToCloud} disabled={isSaving || !canEditThis} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 transition-all"><Icons.Save /> {isSaving ? "Đang lưu..." : "Lưu Cloud"}</button>
+                                <button onClick={exportWord} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all"><Icons.FileText /> Xuất Word</button>
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-10 bg-slate-200/50 custom-scrollbar relative">
-                            <div className={`mx-auto bg-white shadow-2xl rounded-3xl border transition-all duration-500 ${isPreviewMode ? 'max-w-4xl preview-mode p-16' : 'max-w-5xl p-12'}`}>
-                                
-                                {isPreviewMode ? (
-                                    <div className="animate-fade-in space-y-4">
-                                        <div className="flex justify-between font-bold text-[16px] mb-8">
-                                            <div className="text-center"><p>{syllabus.header.schoolName}</p><p>{syllabus.header.department}</p></div>
-                                            <div className="text-center"><p>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p><p className="border-b-2 border-slate-900 pb-1 inline-block">Độc lập - Tự do - Hạnh phúc</p></div>
-                                        </div>
-                                        <h1 className="text-center font-bold text-2xl mb-12 uppercase">ĐỀ CƯƠNG HỌC PHẦN</h1>
+                        <div className="flex-1 overflow-y-auto p-10 font-times bg-white/50 animate-fade-in custom-scrollbar">
+                            <div className="max-w-5xl mx-auto bg-white p-12 shadow-2xl rounded-3xl border min-h-full relative">
+                                {!canEditThis && user && (
+                                    <div className="absolute top-4 right-4 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold z-10 shadow-sm animate-pulse">
+                                        CHẾ ĐỘ XEM
+                                    </div>
+                                )}
+
+                                {activeTab === 'info' && (
+                                    <div className="space-y-8 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tight">I. Thông tin chung</h3>
                                         
-                                        <p className="font-bold uppercase text-[18.6px]">I. THÔNG TIN CHUNG ĐỀ CƯƠNG HỌC PHẦN</p>
-                                        <div className="indent-line space-y-1">
-                                            <p>Học phần: {syllabus.info.name}</p>
-                                            <p>Mã học phần: {syllabus.info.code}</p>
-                                            <p>Loại học phần: {syllabus.info.type}</p>
-                                            <p>Số tín chỉ: {syllabus.info.credits.total}</p>
-                                            <p>Số tiết: {syllabus.info.hours.classroom + syllabus.info.hours.exam}</p>
+                                        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+                                            <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ Ô tô" /></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg uppercase font-mono bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="OTO301" /></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} placeholder="Kỹ thuật Ô tô" /></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200 outline-none" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Học phần trước</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.prerequisites} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, prerequisites: e.target.value}})} placeholder="Nhập mã học phần..." /></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Học phần song hành</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.parallel} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, parallel: e.target.value}})} placeholder="Nhập mã học phần..." /></div>
+                                            <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bộ môn / Khoa phụ trách</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.contact} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, contact: e.target.value}})} /></div>
                                         </div>
 
-                                        <p className="font-bold uppercase text-[18.6px] mt-8">II. MỤC TIÊU HỌC PHẦN</p>
-                                        <div className="indent-line">
-                                            <textarea className="w-full" rows="6" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} />
-                                        </div>
+                                        <div className="bg-blue-50/80 p-8 rounded-[2rem] space-y-8 shadow-inner border border-blue-100 mt-6 animate-fade-in">
+                                            <h4 className="text-xs font-bold text-blue-800 uppercase italic tracking-wider flex items-center gap-2">
+                                                <Icons.CLO /> Phân bổ tín chỉ và thời lượng tiết học
+                                            </h4>
+                                            
+                                            <div className="grid grid-cols-3 gap-8">
+                                                <CreditStepper label="Tín chỉ Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
+                                                <CreditStepper label="Tín chỉ Thực hành" field="practice" value={syllabus.info.credits.practice} />
+                                                <CreditStepper label="Tín chỉ Thực tập" field="internship" value={syllabus.info.credits.internship} />
+                                            </div>
 
-                                        <p className="font-bold uppercase text-[18.6px] mt-8">III. CHUẨN ĐẦU RA (CLO)</p>
-                                        <table className="w-full border-collapse border border-slate-900 mt-2">
-                                            <thead><tr className="bg-slate-50"><th className="border border-slate-900 p-2 w-20">Ký hiệu</th><th className="border border-slate-900 p-2">Nội dung</th></tr></thead>
-                                            <tbody>{syllabus.clos.map((c, i) => (<tr key={i}><td className="border border-slate-900 p-2 text-center font-bold">{c.id}</td><td className="border border-slate-900 p-2"><textarea value={c.content} rows="1" onChange={e => { const n=[...syllabus.clos]; n[i].content=e.target.value; setSyllabus({...syllabus, clos:n}); }} /></td></tr>))}</tbody>
-                                        </table>
-
-                                        <div className="flex justify-between mt-20 font-bold">
-                                            <div className="text-center w-1/2">CHỦ NHIỆM KHOA</div>
-                                            <div className="text-center w-1/2"><p className="font-normal italic mb-1">{syllabus.header.city}, ngày... tháng... năm...</p><p>TRƯỞNG BỘ MÔN</p></div>
+                                            <div className="grid grid-cols-4 gap-4 pt-6 border-t border-blue-200">
+                                                <div className="text-center bg-blue-600 text-white rounded-2xl p-4 shadow-lg">
+                                                    <p className="text-[10px] font-bold uppercase opacity-80 mb-1">Số tín chỉ</p>
+                                                    <p className="text-3xl font-bold">{syllabus.info.credits.total}</p>
+                                                </div>
+                                                <div className="text-center bg-white rounded-2xl p-4 shadow-sm border border-blue-100 flex flex-col justify-center">
+                                                    <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Tiết Lý thuyết</p>
+                                                    <p className="text-xl font-bold text-slate-700">{syllabus.info.hours.theory}</p>
+                                                </div>
+                                                <div className="text-center bg-white rounded-2xl p-4 shadow-sm border border-blue-100 flex flex-col justify-center">
+                                                    <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Tiết TH / TT / TL</p>
+                                                    <p className="text-xl font-bold text-slate-700">{syllabus.info.hours.practice}</p>
+                                                </div>
+                                                <div className="text-center bg-white rounded-2xl p-4 shadow-sm border border-blue-100 flex flex-col justify-center">
+                                                    <p className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Số tiết tự học</p>
+                                                    <p className="text-xl font-bold text-emerald-700">{syllabus.info.hours.selfStudy}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        {/* GIAO DIỆN NHẬP LIỆU GỐC TỪ V2.HTML */}
-                                        {activeTab === 'info' && (
-                                            <div className="space-y-8 animate-fade-in">
-                                                <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tight">I. Thông tin chung</h3>
-                                                <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                                                    <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} /></div>
-                                                    <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg uppercase font-mono bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} /></div>
-                                                    <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 outline-none" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
-                                                </div>
-                                                <div className="bg-blue-50/80 p-8 rounded-[2rem] space-y-8 shadow-inner border border-blue-100 mt-6">
-                                                    <div className="grid grid-cols-3 gap-8">
-                                                        <CreditStepper label="Tín chỉ Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
-                                                        <CreditStepper label="Tín chỉ Thực hành" field="practice" value={syllabus.info.credits.practice} />
-                                                        <CreditStepper label="Tín chỉ Thực tập" field="internship" value={syllabus.info.credits.internship} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {activeTab === 'objectives' && (
-                                            <div className="space-y-4 animate-fade-in">
-                                                <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">II. Mục tiêu học phần</h3>
-                                                <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl outline-none text-sm bg-slate-50 font-times" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} />
-                                            </div>
-                                        )}
-                                        {activeTab === 'clos' && (
-                                            <div className="space-y-10 animate-fade-in">
-                                                <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4 tracking-tighter">III. Chuẩn đầu ra (CLO)</h3>
-                                                {syllabus.clos.map((c, idx) => (
-                                                    <div key={idx} className="flex gap-2 mb-2"><input disabled={!canEditThis} className="w-16 p-2 border rounded font-bold text-center uppercase" value={c.id} onChange={e => { const n = [...syllabus.clos]; n[idx].id = e.target.value; setSyllabus({...syllabus, clos: n}) }} /><textarea disabled={!canEditThis} className="flex-1 p-2 border rounded" rows="1" value={c.content} onChange={e => { const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n}) }} /></div>
-                                                ))}
-                                                <button onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id:`HP${syllabus.clos.length+1}`, content:''}]})}>+ Thêm CLO</button>
-                                            </div>
-                                        )}
-                                        {activeTab === 'structure' && (
-                                            <div className="space-y-4 animate-fade-in">
-                                                <h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">V. Cấu trúc học phần</h3>
-                                                <div className="overflow-x-auto border rounded-xl"><table className="w-full text-xs text-left border-collapse"><thead className="bg-slate-50 border-b"><tr><th className="p-2 border-r w-10">STT</th><th className="p-2 border-r">Nội dung</th><th className="p-2 border-r">CĐR</th><th className="p-2 border-r">LT</th><th className="p-2 border-r">TH</th><th className="p-2">Học liệu</th></tr></thead><tbody>{syllabus.structure.map((r, i) => (<tr key={i} className="border-b"><td className="p-2 border-r">{r.stt}</td><td className="p-2 border-r"><input className="w-full" value={r.title} onChange={e => { const n=[...syllabus.structure]; n[i].title=e.target.value; setSyllabus({...syllabus, structure:n}) }} /></td><td className="p-2 border-r">{r.clo}</td><td className="p-2 border-r">{r.lt}</td><td className="p-2 border-r">{r.th}</td><td className="p-2">{r.material}</td></tr>))}</tbody></table><button className="m-2" onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, {stt: syllabus.structure.length+1, title:'', clo:'', lt:0, th:0, material:''}]})}>+ Thêm hàng</button></div>
-                                            </div>
-                                        )}
-                                        {activeTab === 'materials' && (
-                                            <div className="space-y-4 animate-fade-in">
-                                                <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VIII. Cơ sở vật chất, học liệu</h3>
-                                                <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl outline-none text-sm bg-slate-50 font-times" value={syllabus.materials} onChange={e => setSyllabus({...syllabus, materials: e.target.value})} placeholder="Giáo trình, tài liệu tham khảo..." />
-                                            </div>
-                                        )}
-                                        {activeTab === 'regulations' && (
-                                            <div className="space-y-4 animate-fade-in">
-                                                <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IX. Quy định của học phần</h3>
-                                                <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl outline-none text-sm bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} />
-                                            </div>
-                                        )}
-                                    </>
                                 )}
+
+                                {activeTab === 'objectives' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">II. Mục tiêu học phần</h3>
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.objectives} onChange={e => setSyllabus({...syllabus, objectives: e.target.value})} placeholder="Kiến thức, kỹ năng, thái độ..." />
+                                    </div>
+                                )}
+
+                                {activeTab === 'clos' && (
+                                    <div className="space-y-10 animate-fade-in">
+                                        <section>
+                                            <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 mb-4 tracking-tighter">III. Chuẩn đầu ra (CLO)</h3>
+                                            <div className="space-y-2">
+                                                {syllabus.clos.map((c, idx) => (
+                                                    <div key={idx} className="flex gap-2 group animate-fade-in">
+                                                        <input disabled={!canEditThis} className="w-16 p-2 border rounded font-bold text-center uppercase shadow-sm bg-slate-50" value={c.id} onChange={e => { const n = [...syllabus.clos]; n[idx].id = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
+                                                        <textarea disabled={!canEditThis} className="flex-1 p-2 border rounded shadow-sm focus:ring-1 focus:ring-blue-400 outline-none font-times" rows="1" value={c.content} onChange={e => { const n = [...syllabus.clos]; n[idx].content = e.target.value; setSyllabus({...syllabus, clos: n}) }} />
+                                                        {canEditThis && <button onClick={() => setSyllabus({...syllabus, clos: syllabus.clos.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 p-1 transition-colors"><Icons.Trash /></button>}
+                                                    </div>
+                                                ))}
+                                                <button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, clos: [...syllabus.clos, {id: `HP${syllabus.clos.length+1}`, content: ''}]})} className="text-blue-600 text-xs font-bold hover:underline py-2">+ Thêm chuẩn đầu ra</button>
+                                            </div>
+                                        </section>
+                                        <section className="pt-6 border-t border-slate-100">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h4 className="text-sm font-bold text-slate-600 italic tracking-tighter">Bảng đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:</h4>
+                                                {canEditThis && (
+                                                    <button onClick={() => {
+                                                        const newPLO = `PLO ${syllabus.cloMatrix.plos.length + 1}`;
+                                                        setSyllabus(prev => ({...prev, cloMatrix: {...prev.cloMatrix, plos: [...prev.cloMatrix.plos, newPLO]}}));
+                                                    }} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100">+ Thêm cột PLO</button>
+                                                )}
+                                            </div>
+                                            <div className="overflow-x-auto border rounded-xl shadow-sm bg-white">
+                                                <table className="w-full text-xs text-left border-collapse">
+                                                    <thead className="bg-slate-50 border-b">
+                                                        <tr>
+                                                            <th className="p-4 border-r min-w-[120px] font-bold uppercase text-slate-500 text-center">Chuẩn đầu ra học phần</th>
+                                                            {syllabus.cloMatrix.plos.map((p, idx) => (
+                                                                <th key={idx} className="p-2 text-center border-r text-blue-600 font-bold min-w-[60px] relative group">
+                                                                    <input disabled={!canEditThis} className="w-full text-center bg-transparent outline-none focus:text-blue-800 uppercase" value={p} onChange={e => {
+                                                                        const n = [...syllabus.cloMatrix.plos];
+                                                                        n[idx] = e.target.value;
+                                                                        setSyllabus({...syllabus, cloMatrix: {...syllabus.cloMatrix, plos: n}});
+                                                                    }} />
+                                                                    {canEditThis && (
+                                                                        <button onClick={() => {
+                                                                            const n = syllabus.cloMatrix.plos.filter((_, i) => i !== idx);
+                                                                            setSyllabus({...syllabus, cloMatrix: {...syllabus.cloMatrix, plos: n}});
+                                                                        }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 items-center justify-center hidden group-hover:flex">×</button>
+                                                                    )}
+                                                                </th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {syllabus.clos.map((c, cIdx) => (
+                                                            <tr key={cIdx} className="border-b last:border-none hover:bg-slate-50/50 transition-colors">
+                                                                <td className="p-4 border-r font-bold bg-slate-50/30 text-slate-700 text-center">{c.id}</td>
+                                                                {syllabus.cloMatrix.plos.map((p, pIdx) => (
+                                                                    <td key={pIdx} className="p-0 border-r last:border-none">
+                                                                        <input disabled={!canEditThis} className="w-full text-center p-3 uppercase bg-transparent outline-none focus:bg-blue-50/50" placeholder="-" value={syllabus.cloMatrix.mapping[c.id]?.[p] || ''} onChange={e => {
+                                                                            const val = e.target.value;
+                                                                            setSyllabus(prev => ({...prev, cloMatrix: {...prev.cloMatrix, mapping: {...prev.cloMatrix.mapping, [c.id]: {...prev.cloMatrix.mapping[c.id], [p]: val}}}}));
+                                                                        }} />
+                                                                    </td>
+                                                                ))}
+                                                            </tr>
+                                                        ))}
+                                                        <tr className="bg-blue-50/30 font-bold border-t border-blue-200">
+                                                            <td className="p-4 border-r text-blue-800 text-center italic">Học phần: {syllabus.info.name || "..."}</td>
+                                                            {syllabus.cloMatrix.plos.map((p, idx) => {
+                                                                const summaryValue = calculatePloSummary(p);
+                                                                return (
+                                                                    <td key={idx} className="p-3 text-center border-r text-blue-700 font-bold text-sm bg-blue-50/20">
+                                                                        {summaryValue || ""}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <p className="mt-3 text-[10px] text-slate-400 italic font-times">
+                                                * Chú thích mức độ: I (Giới thiệu), R (Phát triển), M (Đạt trình độ), A (Đánh giá).<br/>
+                                                ** Dòng Học phần: Tổng hợp mức độ cao nhất theo quy trình I &lt; R &lt; M và kết hợp đánh giá A.
+                                            </p>
+                                        </section>
+                                    </div>
+                                )}
+
+                                {activeTab === 'description' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IV. Mô tả học phần</h3>
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.description} onChange={e => setSyllabus({...syllabus, description: e.target.value})} placeholder="Tóm tắt nội dung chính..." />
+                                    </div>
+                                )}
+
+                                {activeTab === 'structure' && (
+                                    <div className="space-y-6 animate-fade-in">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">V. Cấu trúc học phần</h3>
+                                            <button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, structure: [...syllabus.structure, { level: 0, title: '', clo: 'HP1', isTest: false, lt: 0, tl: 0, thn: 0, thd: 0, bt: 0, kt: 0, extra: 0, material: [] }]})} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">+ Thêm hàng mới</button>
+                                        </div>
+
+                                        <div className="overflow-visible border rounded-xl shadow-lg bg-white">
+                                            <table className="w-full text-[13px] text-left border-collapse font-times">
+                                                <thead className="bg-slate-50 font-bold border-b text-slate-600 sticky top-0 z-20">
+                                                    <tr>
+                                                        <th className="p-2 border-r w-10 text-center" rowSpan="2">Mức</th>
+                                                        <th className="p-2 border-r w-12 text-center" rowSpan="2">STT</th>
+                                                        <th className="p-2 border-r min-w-[150px]" rowSpan="2">Nội dung</th>
+                                                        <th className="p-2 border-r w-16 text-center" rowSpan="2">CĐR</th>
+                                                        <th className="p-2 border-r w-14 text-center" rowSpan="2">Số tiết</th>
+                                                        <th className="p-1 border-r text-center" colSpan="7">Phân bổ tiết học (LT, TL, THN, THĐ, BT, KT, ...)</th>
+                                                        <th className="p-2 border-r w-32 text-center" rowSpan="2">Học liệu</th>
+                                                        <th className="p-2 w-8" rowSpan="2"></th>
+                                                    </tr>
+                                                    <tr className="bg-slate-100/50">
+                                                        <th className="p-1 border-r text-center w-8">LT</th>
+                                                        <th className="p-1 border-r text-center w-8">TL</th>
+                                                        <th className="p-1 border-r text-center w-8">THN</th>
+                                                        <th className="p-1 border-r text-center w-8">THĐ</th>
+                                                        <th className="p-1 border-r text-center w-10">BT(TN)</th>
+                                                        <th className="p-1 border-r text-center w-10">KT,thi</th>
+                                                        <th className="p-1 border-r text-center w-8">...</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {syllabus.structure.map((item, idx) => {
+                                                        const isParent = hasChildren(idx);
+                                                        const isLesson = item.level === 0;
+                                                        const isSection = item.level > 0;
+                                                        
+                                                        return (
+                                                            <tr key={idx} className={`border-b hover:bg-slate-50 transition-all ${isLesson ? 'level-0' : item.level === 1 ? 'bg-slate-50/50' : 'italic text-slate-500'}`}>
+                                                                <td className="p-1 border-r text-center">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <button disabled={!canEditThis} onClick={() => changeLevel(idx, -1)} className="hover:text-blue-600 transition-colors"><Icons.ArrowLeft /></button>
+                                                                        <button disabled={!canEditThis} onClick={() => changeLevel(idx, 1)} className="hover:text-blue-600 transition-colors"><Icons.ArrowRight /></button>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-1 border-r text-center">
+                                                                    <input disabled={!canEditThis} className="table-input font-bold" value={item.isTest ? "*" : getAutoSTT(idx)} onChange={e => {
+                                                                        const val = e.target.value.trim();
+                                                                        updateStructureField(idx, 'isTest', val === '*');
+                                                                    }} />
+                                                                </td>
+                                                                <td className="p-1 border-r">
+                                                                    <div className={`${item.level === 1 ? 'pl-4' : item.level === 2 ? 'pl-8' : ''}`}>
+                                                                        <input disabled={!canEditThis} className="w-full outline-none bg-transparent font-medium" value={item.title} onChange={e => updateStructureField(idx, 'title', e.target.value)} />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-1 border-r">
+                                                                    {(!isSection || item.isTest) ? (
+                                                                        <input disabled={!canEditThis} className="table-input font-bold text-blue-600 uppercase" value={item.clo} onChange={e => updateStructureField(idx, 'clo', e.target.value)} />
+                                                                    ) : (
+                                                                        <div className="text-center text-slate-300">-</div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-1 border-r text-center font-bold text-emerald-700 bg-emerald-50/30">
+                                                                    {calculateRowTotal(idx)}
+                                                                </td>
+                                                                {['lt', 'tl', 'thn', 'thd', 'bt', 'kt', 'extra'].map(field => (
+                                                                    <td key={field} className="p-1 border-r">
+                                                                        <input 
+                                                                            type="number" 
+                                                                            disabled={!canEditThis || isParent} 
+                                                                            className="table-input" 
+                                                                            value={getAggregatedValue(idx, field) || ''} 
+                                                                            onChange={e => updateStructureField(idx, field, parseInt(e.target.value) || 0)} 
+                                                                        />
+                                                                    </td>
+                                                                ))}
+                                                                <td className="p-1 border-r relative group/m">
+                                                                    {isLesson && !item.isTest ? (
+                                                                        <div className="relative">
+                                                                            <div className="flex flex-wrap gap-0.5 min-h-[24px] p-1 rounded border border-transparent hover:border-blue-200 cursor-pointer bg-slate-50/50">
+                                                                                {item.material?.length > 0 ? (
+                                                                                    item.material.map(m => (
+                                                                                        <span key={m} className="bg-blue-600 text-white px-1 rounded text-[10px] font-bold">{m}</span>
+                                                                                    ))
+                                                                                ) : <span className="text-slate-400 italic text-[11px]">Chọn...</span>}
+                                                                            </div>
+                                                                            <div className="hidden group-hover/m:grid absolute right-0 bottom-full bg-white border border-slate-200 shadow-2xl rounded-xl p-2 z-50 w-56 mb-1 grid-cols-4 gap-1 animate-fade-in">
+                                                                                <p className="col-span-4 text-[9px] font-bold text-slate-400 uppercase mb-1 px-1">Tích chọn học liệu:</p>
+                                                                                {getAvailableMaterials().map(m => (
+                                                                                    <button key={m} onClick={() => {
+                                                                                        const cur = item.material || [];
+                                                                                        updateStructureField(idx, 'material', cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m].sort((a,b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/))));
+                                                                                    }} className={`px-1 py-1 rounded text-[11px] font-bold border transition-all ${item.material?.includes(m) ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-blue-50'}`}>{m}</button>
+                                                                                ))}
+                                                                                {getAvailableMaterials().length === 0 && <p className="col-span-4 text-[10px] italic text-red-400 p-2">Vui lòng nhập danh mục tài liệu ở Mục VIII trước.</p>}
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : <span className="text-slate-300 block text-center">-</span>}
+                                                                </td>
+                                                                <td className="p-1 text-center">
+                                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, structure: syllabus.structure.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                                <tfoot className="sticky-footer text-[11px] uppercase">
+                                                    <tr className="bg-slate-100/80">
+                                                        <td colSpan="4" className="p-3 text-right border-r font-black text-slate-700">TỔNG CỘNG HỌC PHẦN (Tính theo Bài):</td>
+                                                        <td className="p-3 text-center border-r text-emerald-800 font-black text-base">{calculateGrandTotal('total')}</td>
+                                                        {['lt','tl','thn','thd','bt','kt','extra'].map(f => <td key={f} className="p-3 text-center border-r font-black text-slate-800">{calculateGrandTotal(f)}</td>)}
+                                                        <td colSpan="2" className="p-3"></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 italic px-2">* Lưu ý: Các ô Số tiết của Bài/Mục sẽ tự động cộng dồn từ cấp con bên dưới. Chỉ nhập trực tiếp vào hàng không có phân cấp nhỏ hơn.</p>
+                                    </div>
+                                )}
+
+                                {activeTab === 'teaching' && (
+                                    <div className="space-y-6 animate-fade-in">
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. Kế hoạch dạy học chi tiết</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, teachingPlan: [...syllabus.teachingPlan, {title: '', instructor: '', student: ''}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100 transition-all">+ Thêm hoạt động</button></div>
+                                        {syllabus.teachingPlan.map((p, i) => (
+                                            <div key={i} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 space-y-4 group shadow-sm hover:border-blue-200 transition-all">
+                                                <div className="flex justify-between items-center">
+                                                    <input disabled={!canEditThis} className="flex-1 bg-transparent font-bold text-base outline-none border-b border-dashed border-slate-300 mr-4 text-blue-800 font-times" value={p.title} placeholder="Nội dung bài học..." onChange={e => { const n = [...syllabus.teachingPlan]; n[i].title = e.target.value; setSyllabus({...syllabus, teachingPlan: n}) }} />
+                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, teachingPlan: syllabus.teachingPlan.filter((_, idx) => idx !== i)})} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 p-2 transition-all"><Icons.Trash /></button>}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-6 text-sm">
+                                                    <div className="space-y-2"><label className="font-bold uppercase text-slate-400 text-[9px] tracking-widest">Giảng viên (Lên lớp)</label><textarea disabled={!canEditThis} rows="4" className="w-full p-4 border rounded-2xl bg-white shadow-inner focus:ring-1 focus:ring-blue-400 outline-none transition-all font-times" value={p.instructor} onChange={e => { const n = [...syllabus.teachingPlan]; n[i].instructor = e.target.value; setSyllabus({...syllabus, teachingPlan: n}) }} /></div>
+                                                    <div className="space-y-2"><label className="font-bold uppercase text-slate-400 text-[9px] tracking-widest">Học viên (Chuẩn bị)</label><textarea disabled={!canEditThis} rows="4" className="w-full p-4 border rounded-2xl bg-white shadow-inner focus:ring-1 focus:ring-blue-400 outline-none transition-all font-times" value={p.student} onChange={e => { const n = [...syllabus.teachingPlan]; n[i].student = e.target.value; setSyllabus({...syllabus, teachingPlan: n}) }} /></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {activeTab === 'assessment' && (
+                                    <div className="space-y-6 animate-fade-in">
+                                        <div className="flex justify-between items-center"><h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VII. Đánh giá kết quả học tập</h3><button disabled={!canEditThis} onClick={() => setSyllabus({...syllabus, assessments: [...syllabus.assessments, {code: `A${syllabus.assessments.length+1}.1`, type: '', method: '', weight: '10%'}]})} className="text-xs bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-blue-100">+ Thêm tiêu chí</button></div>
+                                        <div className="space-y-4">
+                                            {syllabus.assessments.map((ass, i) => (
+                                                <div key={i} className="flex gap-4 items-center bg-slate-50/80 p-5 rounded-3xl border border-slate-100 group shadow-sm hover:bg-white hover:border-blue-200 transition-all">
+                                                    <div className="w-16"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Mã</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center font-bold bg-white shadow-sm shadow-inner" value={ass.code} onChange={e => { const n = [...syllabus.assessments]; n[i].code = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
+                                                    <div className="flex-1 space-y-3">
+                                                        <div className="grid grid-cols-2 gap-3"><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 font-times shadow-inner" value={ass.method} placeholder="Phương pháp đánh giá..." onChange={e => { const n = [...syllabus.assessments]; n[i].method = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /><input disabled={!canEditThis} className="p-3 border rounded-xl text-xs bg-white focus:ring-1 focus:ring-blue-400 font-times shadow-inner" value={ass.criteria} placeholder="Tiêu chí đánh giá..." onChange={e => { const n = [...syllabus.assessments]; n[i].criteria = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
+                                                    </div>
+                                                    <div className="w-16 text-center"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Trọng số</label><input disabled={!canEditThis} className="w-full p-2 border rounded-xl text-xs text-center text-blue-600 font-bold bg-white shadow-inner" value={ass.weight} onChange={e => { const n = [...syllabus.assessments]; n[i].weight = e.target.value; setSyllabus({...syllabus, assessments: n}) }} /></div>
+                                                    {canEditThis && <button onClick={() => setSyllabus({...syllabus, assessments: syllabus.assessments.filter((_, idx) => idx !== i)})} className="mt-4 text-slate-300 hover:text-red-500 p-2 transition-all"><Icons.Trash /></button>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'materials' && (
+                                    <div className="space-y-10 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">VIII. Cơ sở vật chất, học liệu</h3>
+                                        <section className="space-y-4">
+                                            <div className="flex justify-between items-center"><h4 className="text-sm font-bold text-slate-700 uppercase">1. Học liệu bắt buộc</h4>{canEditThis && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, required: [...syllabus.materials.required, '']}})} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100 transition-all">+ Thêm tài liệu</button>}</div>
+                                            <div className="space-y-2">
+                                                {(syllabus.materials?.required || []).map((mat, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-start animate-fade-in"><span className="w-10 pt-2 text-center font-bold text-slate-400">[{idx + 1}]</span><textarea disabled={!canEditThis} className="flex-1 p-2 border rounded-xl bg-slate-50 focus:bg-white outline-none font-times text-sm transition-all" rows="1" value={mat} onChange={e => { const n=[...syllabus.materials.required]; n[idx]=e.target.value; setSyllabus({...syllabus, materials: {...syllabus.materials, required: n}})}} />{canEditThis && syllabus.materials.required.length > 1 && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, required: syllabus.materials.required.filter((_, i) => i !== idx)}})} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>}</div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                        <section className="space-y-4">
+                                            <div className="flex justify-between items-center"><h4 className="text-sm font-bold text-slate-700 uppercase">2. Học liệu tham khảo</h4>{canEditThis && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, reference: [...syllabus.materials.reference, '']}})} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold hover:bg-blue-100 transition-all">+ Thêm tài liệu</button>}</div>
+                                            <div className="space-y-2">
+                                                {(syllabus.materials?.reference || []).map((mat, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-start animate-fade-in"><span className="w-10 pt-2 text-center font-bold text-slate-400">[{syllabus.materials.required.length + idx + 1}]</span><textarea disabled={!canEditThis} className="flex-1 p-2 border rounded-xl bg-slate-50 focus:bg-white outline-none font-times text-sm transition-all" rows="1" value={mat} onChange={e => { const n=[...syllabus.materials.reference]; n[idx]=e.target.value; setSyllabus({...syllabus, materials: {...syllabus.materials, reference: n}})}} />{canEditThis && syllabus.materials.reference.length > 0 && <button onClick={() => setSyllabus({...syllabus, materials: {...syllabus.materials, reference: syllabus.materials.reference.filter((_, i) => i !== idx)}})} className="text-slate-300 hover:text-red-500 p-2"><Icons.Trash /></button>}</div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                        <section className="space-y-4">
+                                            <h4 className="text-sm font-bold text-slate-700 uppercase">3. Cơ sở vật chất phục vụ dạy học</h4>
+                                            <textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl outline-none text-sm shadow-inner italic bg-slate-50 font-times focus:ring-1 focus:ring-blue-400" value={syllabus.materials?.equipment} onChange={e => setSyllabus({...syllabus, materials: {...syllabus.materials, equipment: e.target.value}})} placeholder="Các trang thiết bị chuyên dụng, phòng thí nghiệm..." />
+                                        </section>
+                                    </div>
+                                )}
+
+                                {activeTab === 'regulations' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IX. Quy định của học phần</h3>
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Các quy định về thi cử, thái độ học tập..." />
+                                    </div>
+                                )}
+
+                                <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t border-slate-100 pt-6 uppercase tracking-[0.2em]">SyllabusPro Standard Software - SQKT 2026</div>
                             </div>
                         </div>
                     </main>

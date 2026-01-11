@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyllabusPro V3.9 - Auto Matrix Logic</title>
+    <title>CTĐT V3.9</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -92,13 +92,13 @@
             id: '', ownerUid: '', ownerEmail: '',
             header: { schoolName: 'TRƯỜNG SĨ QUAN KTQS', department: 'KHOA Ô TÔ', city: 'Thành phố Hồ Chí Minh', date: '2025' },
             info: { 
-                name: '', code: '', major: '', type: 'Bắt buộc', prerequisites: '', parallel: '', contact: 'Khoa Ô tô',
+                name: '', code: '', major: '', type: 'Bắt buộc', prerequisites: '', parallel: '', contact: 'Bộ môn Nguyên lý Động cơ - Điện, Khoa Ô tô',
                 credits: { theory: 0, practice: 0, internship: 0, total: 0 }, 
                 hours: { classroom: 0, theory: 0, practice: 0, internship: 0, exam: 2, selfStudy: 0 } 
             },
             objectives: '', description: '',
             clos: [{ id: 'HP1', content: '' }],
-            cloMatrix: { plos: ['KT 1', 'KT 2', 'KN 1', 'KN 2'], mapping: {} },
+            cloMatrix: { plos: ['CB1.KT1', 'CB2.KT2', 'CB2.KN1', 'CB3.KN2'], mapping: {} },
             structure: [],
             teachingPlan: [],
             assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', criteria: 'Chuyên cần, kiến thức', weight: '10%', clo: 'HP1' }],
@@ -283,13 +283,13 @@ const exportWord = async () => {
         new Paragraph({
             children: [
                 new TextRun({ text: syllabus.header?.schoolName?.toUpperCase() || "TRƯỜNG SĨ QUAN KTQS", bold: true, size: 24, font: STYLES.font }),
-                new TextRun({ text: "\t\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: STYLES.font })
+                new TextRun({ text: "\t\t\tCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: STYLES.font })
             ],
         }),
         new Paragraph({
             children: [
                 new TextRun({ text: syllabus.header?.department?.toUpperCase() || "KHOA Ô TÔ", bold: true, size: 24, font: STYLES.font }),
-                new TextRun({ text: "\t\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: STYLES.font })
+                new TextRun({ text: "\t\t\t\tĐộc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: STYLES.font })
             ],
         }),
         new Paragraph({ text: "", spacing: { before: 400 } }),
@@ -988,7 +988,7 @@ const exportWord = async () => {
                                     </div>
                                 )}
 
-                                <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t border-slate-100 pt-6 uppercase tracking-[0.2em]">SyllabusPro Standard Software - SQKT 2026</div>
+                                <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t border-slate-100 pt-6 uppercase tracking-[0.2em]">CTĐT - SQKT 2026</div>
                             </div>
                         </div>
                     </main>

@@ -814,7 +814,8 @@ sections.push(
 
       // BODY
       ...getAssessmentRows().map((r) => {
-        const p = syllabus.assessmentPlan?.[r.examCode] || {};
+        // Lấy dữ liệu mới nhập từ state assessmentPlan
+        const p = assessmentPlan[r.examCode] || {}; // <-- quan trọng
 
         return new TableRow({
           children: [
@@ -834,8 +835,6 @@ sections.push(
   new Paragraph({ text: "" })
 );
 
-
-    
     
 
 
@@ -1067,9 +1066,16 @@ sections.push(
                 <div className="flex h-screen bg-slate-100 font-inter text-sm select-none">
                     {/* Sidebar */}
                     <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                            <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">CTĐT-SQKT</h1>
+                        <div className="p-6 border-b border-slate-800 flex items-center justify-between gap-4">
+                        {/* Logo bên trái */}
+                        <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
+
+                        {/* Tiêu đề */}
+                        <h1 className="font-bold text-lg text-blue-400 uppercase tracking-tighter">
+                            CTĐT-SQKT
+                        </h1>
                         </div>
+
                         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
                             <div className="flex flex-col gap-1 mb-6">
                                 {[

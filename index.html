@@ -911,7 +911,7 @@ const exportWord = async () => {
                                                 </tbody>
                                                 <tfoot className="sticky-footer text-[11px] uppercase">
                                                     <tr className="bg-slate-100/80">
-                                                        <td colSpan="4" className="p-3 text-right border-r font-black text-slate-700">TỔNG CỘNG HỌC PHẦN (Tính theo Bài):</td>
+                                                        <td colSpan="4" className="p-3 text-right border-r font-black text-slate-700">CỘNG:</td>
                                                         <td className="p-3 text-center border-r text-emerald-800 font-black text-base">{calculateGrandTotal('total')}</td>
                                                         {['lt','tl','thn','thd','bt','kt','extra'].map(f => <td key={f} className="p-3 text-center border-r font-black text-slate-800">{calculateGrandTotal(f)}</td>)}
                                                         <td colSpan="2" className="p-3"></td>
@@ -919,7 +919,10 @@ const exportWord = async () => {
                                                 </tfoot>
                                             </table>
                                         </div>
-                                        <p className="text-[11px] text-slate-400 italic px-2">* Lưu ý: Các ô Số tiết của Bài/Mục sẽ tự động cộng dồn từ cấp con bên dưới. Chỉ nhập trực tiếp vào hàng không có phân cấp nhỏ hơn.</p>
+                                        <p className="text-[11px] text-slate-400 italic px-2">
+                                            * Lưu ý: Các ô Số tiết của Bài/Mục sẽ tự động cộng dồn từ cấp con bên dưới. Chỉ nhập trực tiếp vào hàng không có phân cấp nhỏ hơn.<br/>
+                                            ** Chuẩn đầu ra (CĐR); Lý thuyết (LT); Thực hành (TH), ngày (N), đêm (Đ); Thảo luận (TL); Bài tập, thí nghiệm (BT, TN); Kiểm tra (KT); Hướng dẫn (HD).
+                                        </p>
                                     </div>
                                 )}
 

@@ -366,7 +366,7 @@ const exportWord = async () => {
                 })),
                 new TableRow({
                     children: [
-                        createCell(syllabus.info.name, { bold: true }),
+                        createCell(syllabus.info.name || "Chưa nhập thông tin.", { bold: true }),
                         ...syllabus.cloMatrix.plos.map(p => createCell(calculatePloSummary(p), { bold: true }))
                     ]
                 })
@@ -393,10 +393,11 @@ const exportWord = async () => {
                         createCell("STT", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
                         createCell("Nội dung", { bold: true, width: { size: 35, type: WidthType.PERCENTAGE } }),
                         createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
-                        createCell("Tổng", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+                        createCell("Số tiết", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
                         createCell("LT", { bold: true }), createCell("TL", { bold: true }),
-                        createCell("TH", { bold: true }), createCell("BT", { bold: true }),
-                        createCell("KT", { bold: true }), createCell("Học liệu", { bold: true })
+                        createCell("THN", { bold: true }), createCell("THĐ", { bold: true }),
+                        createCell("BT", { bold: true }), createCell("KT", { bold: true }),
+                        createCell("...", { bold: true }), createCell("Học liệu", { bold: true })
                     ]
                 }),
                 ...syllabus.structure.map((it, idx) => new TableRow({
@@ -408,8 +409,10 @@ const exportWord = async () => {
                         createCell(getAggregatedValue(idx, 'lt').toString()),
                         createCell(getAggregatedValue(idx, 'tl').toString()),
                         createCell(getAggregatedValue(idx, 'thn').toString()),
+                        createCell(getAggregatedValue(idx, 'thd').toString()),
                         createCell(getAggregatedValue(idx, 'bt').toString()),
                         createCell(getAggregatedValue(idx, 'kt').toString()),
+                        createCell(getAggregatedValue(idx, 'extra').toString()),
                         createCell(it.level === 0 ? (it.material || []).join(",") : "")
                     ]
                 }))

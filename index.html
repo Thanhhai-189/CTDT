@@ -89,22 +89,62 @@
         };
 
         const initialSyllabus = {
-            id: '', ownerUid: '', ownerEmail: '',
-            header: { schoolName: 'TRƯỜNG SĨ QUAN KTQS', department: 'KHOA Ô TÔ', city: 'Thành phố Hồ Chí Minh', date: '2025' },
-            info: { 
-                name: '', code: '', major: '', type: 'Bắt buộc', prerequisites: '', parallel: '', contact: 'Bộ môn Nguyên lý Động cơ - Điện, Khoa Ô tô',
-                credits: { theory: 0, practice: 0, internship: 0, total: 0 }, 
-                hours: { classroom: 0, theory: 0, practice: 0, internship: 0, exam: 2, selfStudy: 0 } 
-            },
-            objectives: '', description: '',
-            clos: [{ id: 'HP1', content: '' }],
-            cloMatrix: { plos: ['CB1.KT1', 'CB2.KT2', 'CB2.KN1', 'CB3.KN2'], mapping: {} },
-            structure: [],
-            teachingPlan: [],
-            assessments: [{ code: 'A1.1', type: 'Thường xuyên', method: 'Vấn đáp', criteria: 'Chuyên cần, kiến thức', weight: '10%', clo: 'HP1' }],
-            materials: { required: [''], reference: [''], equipment: '' },
-            regulations: ''
-        };
+    id: '',
+    ownerUid: '',
+    ownerEmail: '',
+
+    header: {
+        schoolName: 'TRƯỜNG SĨ QUAN KTQS',
+        department: 'KHOA Ô TÔ',
+        city: 'Thành phố Hồ Chí Minh',
+        date: '2026'
+    },
+
+    info: {
+        name: '',
+        code: '',
+        major: '',
+        type: 'Bắt buộc',
+        prerequisites: '',
+        parallel: '',
+        contact: 'Bộ môn Nguyên lý Động cơ - Điện, Khoa Ô tô',
+        credits: { theory: 0, practice: 0, internship: 0, total: 0 },
+        hours: { classroom: 0, theory: 0, practice: 0, internship: 0, exam: 2, selfStudy: 0 }
+    },
+
+    objectives: '',
+    description: '',
+
+    clos: [{ id: 'HP1', content: '' }],
+
+    cloMatrix: {
+        plos: ['CB1.KT1', 'CB2.KT2', 'CB2.KN1', 'CB3.KN2'],
+        mapping: {}
+    },
+
+    structure: [],
+
+    // ✅ PHẦN 6 – KẾ HOẠCH GIẢNG DẠY (ĐÚNG)
+    teachingPlan: {},
+
+    assessments: [{
+        code: 'A1.1',
+        type: 'Thường xuyên',
+        method: 'Vấn đáp',
+        criteria: 'Chuyên cần, kiến thức',
+        weight: '10%',
+        clo: 'HP1'
+    }],
+
+    materials: {
+        required: [''],
+        reference: [''],
+        equipment: ''
+    },
+
+    regulations: ''
+};
+
 
         function App() {
             const [syllabus, setSyllabus] = useState(initialSyllabus);
@@ -421,12 +461,22 @@ const exportWord = async () => {
         new Paragraph({ text: "" })
     );
     // Cập nhật giá trị cột nhập thủ công trong Phần 6
-    const updateTeachingPlanField = (idx, field, value) => {
-        const newPlan = [...syllabus.teachingPlan];
-            if (!newPlan[idx]) newPlan[idx] = { instructor: '', student: '', exam: '' };
-                newPlan[idx][field] = value;
-                setSyllabus({ ...syllabus, teachingPlan: newPlan });
-    };
+    const updateTeachingPlanField = (lessonKey, field, value) => {
+  setSyllabus(prev => ({
+    ...prev,
+    teachingPlan: {
+      ...prev.teachingPlan,
+      [lessonKey]: {
+        instructor: '',
+        student: '',
+        exam: '',
+        ...(prev.teachingPlan?.[lessonKey] || {}),
+        [field]: value
+      }
+    }
+  }));
+};
+
     // 7. CÁC MỤC CÒN LẠI (VI - IX)
     const addFullSection = (num, title, content) => {
         sections.push(
@@ -934,7 +984,7 @@ const exportWord = async () => {
 
                                 {activeTab === 'teaching' && (
                                             <div className="space-y-6 animate-fade-in">
-                                                <h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. Kế hoạch dạy học chi tiết</h3>
+                                                <h3 className="text-lg font-bold uppercase text-slate-800 tracking-tighter">VI. KẾ HOẠCH VÀ PHƯƠNG PHÁP DẠY HỌC</h3>
                                                 <div className="overflow-x-auto border rounded-xl shadow-lg bg-white">
                                                     <table className="w-full text-[13px] text-left border-collapse font-times">
                                                         <thead className="bg-slate-50 font-bold border-b text-slate-600">
@@ -948,52 +998,74 @@ const exportWord = async () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {syllabus.structure.map((item, idx) => (
-                                                                <tr key={idx} className="border-b hover:bg-slate-50 transition-all">
-                                                                    {/* Cột 1: Bài học - Lấy từ Nội dung Sec 5 nếu Phân cấp 1 (Level 0) */}
-                                                                    <td className="p-2 border-r font-bold text-blue-900 bg-slate-50/30">
-                                                                        {item.level === 0 ? `Bài ${item.stt} (${item.lt})` : ''}
-                                                                    </td>
-                                                                    {/* Cột 2: Nội dung - Lấy từ CĐR Sec 5 */}
-                                                                    <td className="p-2 border-r italic text-slate-700">
-                                                                        {item.level === 0 ? item.title : ''}
-                                                                    </td>
-                                                                    {/* Cột 3: CĐR - Lấy từ LT Sec 5 */}
-                                                                    <td className="p-2 border-r text-center font-mono">
-                                                                        {item.level === 0 ? item.clo: ''}
-                                                                    </td>
-                                                                    {/* Cột 4: Giảng viên - Nhập thủ công */}
-                                                                    <td className="p-2 border-r">
-                                                                        <textarea 
-                                                                            rows="2"
-                                                                            className="w-full bg-transparent outline-none border-none p-1 focus:bg-white transition-all rounded"
-                                                                            value={syllabus.teachingPlan[idx]?.instructor || ''}
-                                                                            onChange={e => updateTeachingPlanField(idx, 'instructor', e.target.value)}
-                                                                            placeholder="..."
-                                                                        />
-                                                                    </td>
-                                                                    {/* Cột 5: Học viên - Nhập thủ công */}
-                                                                    <td className="p-2 border-r">
-                                                                        <textarea 
-                                                                            rows="2"
-                                                                            className="w-full bg-transparent outline-none border-none p-1 focus:bg-white transition-all rounded"
-                                                                            value={syllabus.teachingPlan[idx]?.student || ''}
-                                                                            onChange={e => updateTeachingPlanField(idx, 'student', e.target.value)}
-                                                                            placeholder="..."
-                                                                        />
-                                                                    </td>
-                                                                    {/* Cột 6: Bài kiểm tra thi - Nhập thủ công */}
-                                                                    <td className="p-2 text-center">
-                                                                        <input 
-                                                                            className="w-full bg-transparent outline-none border-none p-1 text-center font-bold text-red-600 focus:bg-white transition-all rounded"
-                                                                            value={syllabus.teachingPlan[idx]?.exam || ''}
-                                                                            onChange={e => updateTeachingPlanField(idx, 'exam', e.target.value)}
-                                                                            placeholder="..."
-                                                                        />
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
+  {syllabus.structure.map((item, idx) => {
+    // Chỉ lấy BÀI (level 0), bỏ section & test
+    if (item.level !== 0 || item.isTest) return null;
+
+    const lessonKey = getAutoSTT(idx); // "1", "2", ...
+    const plan = syllabus.teachingPlan?.[lessonKey] || {};
+
+    return (
+      <tr key={`plan-${lessonKey}`} className="border-b hover:bg-slate-50 transition-all">
+
+        {/* Cột 1: Bài học */}
+        <td className="p-2 border-r font-bold text-blue-900 bg-slate-50/30">
+          Bài {lessonKey} ({item.lt || 0} tiết)
+        </td>
+
+        {/* Cột 2: Nội dung */}
+        <td className="p-2 border-r italic text-slate-700">
+          {item.title}
+        </td>
+
+        {/* Cột 3: CĐR */}
+        <td className="p-2 border-r text-center font-mono">
+          {item.clo}
+        </td>
+
+        {/* Cột 4: Giảng viên */}
+        <td className="p-2 border-r">
+          <textarea
+            rows="2"
+            className="w-full bg-transparent outline-none border-none p-1 focus:bg-white transition-all rounded"
+            value={plan.instructor || ''}
+            onChange={e =>
+              updateTeachingPlanField(lessonKey, 'instructor', e.target.value)
+            }
+            placeholder="Giảng viên thực hiện"
+          />
+        </td>
+
+        {/* Cột 5: Học viên */}
+        <td className="p-2 border-r">
+          <textarea
+            rows="2"
+            className="w-full bg-transparent outline-none border-none p-1 focus:bg-white transition-all rounded"
+            value={plan.student || ''}
+            onChange={e =>
+              updateTeachingPlanField(lessonKey, 'student', e.target.value)
+            }
+            placeholder="Hoạt động học viên"
+          />
+        </td>
+
+        {/* Cột 6: Kiểm tra */}
+        <td className="p-2 text-center">
+          <input
+            className="w-full bg-transparent outline-none border-none p-1 text-center font-bold text-red-600 focus:bg-white transition-all rounded"
+            value={plan.exam || ''}
+            onChange={e =>
+              updateTeachingPlanField(lessonKey, 'exam', e.target.value)
+            }
+            placeholder="KT"
+          />
+        </td>
+
+      </tr>
+    );
+  })}
+</tbody>
+
                                                     </table>
                                                 </div>
                                                 <p className="text-[10px] text-slate-400 italic">

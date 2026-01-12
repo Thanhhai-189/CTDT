@@ -759,12 +759,12 @@ sections.push(
           return new TableRow({
             children: [
               createMultiLineCell(
-                [`Bài ${lesson}`, `(${item.lt || 0} tiết)`],
+                [`Bài ${lesson}`, `(${calculateRowTotal(idx)} tiết)`],
                 { width: { size: 15, type: WidthType.PERCENTAGE } }
               ),
 
               createMultiLineCell(
-                [`I. ${item.title}`, ...subContents],
+                [`${item.title}`, ...subContents],
                 { width: { size: 30, type: WidthType.PERCENTAGE } }
               ),
 
@@ -1174,7 +1174,7 @@ sections.push(
                                         
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
                                             <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ Ô tô" /></div>
-                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg uppercase font-mono bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="O7" /></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg uppercase font-mono bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="O7SQ01" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} placeholder="Kỹ thuật Xe máy quân sự" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200 outline-none" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Học phần trước</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.prerequisites} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, prerequisites: e.target.value}})} placeholder="Nhập học phần..." /></div>

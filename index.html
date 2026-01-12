@@ -362,6 +362,15 @@
                 alert("Đã nhân bản thành công! Bạn hiện là chủ sở hữu bản sao này.");
             };
 
+            // 1. Định nghĩa một hàm helper nhỏ để xử lý hiển thị số
+            const formatNum = (val) => {
+                const num = parseFloat(val);
+                // Nếu không phải là số, hoặc bằng 0, hoặc null/undefined thì trả về chuỗi rỗng
+                if (isNaN(num) || num === 0) return "";
+                // Trả về chuỗi (giữ nguyên phần thập phân nếu có)
+                return num.toString().replace('.', ','); 
+            };
+
             
 
 const exportWord = async () => {
@@ -457,6 +466,12 @@ const createTableCell = (lines, width, bold = false) =>
     });
 
     const sections = [];
+    // Tính tổng cột KT (Kiểm tra, thi) từ mảng structure
+const totalKT = syllabus.structure.reduce((sum, item) => {
+    // Chỉ cộng các hàng ở mức độ nhỏ nhất (không phải hàng cha có chứa con)
+    // Hoặc cộng tất cả nếu logic của bạn cho phép nhập trực tiếp
+    return sum + (parseInt(item.kt) || 0);
+}, 0);
 
 // 1. PHẦN TIÊU ĐỀ (Sử dụng Table để căn lề chuẩn 2 bên)
 const headerTable = new Table({
@@ -588,11 +603,11 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
         createTextPara(`Học phần trước: ${syllabus.info.prerequisites || "Không"}`),
         createTextPara(`Học phần song hành: ${syllabus.info.parallel || "Không"}`),
         createTextPara(`Số tín chỉ: ${syllabus.info.credits.total}`),
-        createTextPara(`Số tiết: ${calculateGrandTotal('total')}`),
+        createTextPara(`Số tiết: `),
         createTextPara(`- Số tiết lên lớp: ${syllabus.info.hours.classroom}`, { indent: { left: 708 } }),
         createTextPara(`+ Lý thuyết: ${syllabus.info.hours.theory}`, { indent: { left: 1134 } }),
         createTextPara(`+ Thực hành, thí nghiệm, bài tập, thảo luận: ${syllabus.info.hours.practice}`, { indent: { left: 1134 } }),
-        createTextPara(`- Thi, kiểm tra kết thúc: ${syllabus.info.hours.exam}`, { indent: { left: 708 } }),
+        createTextPara(`- Thi, kiểm tra kết thúc: ${totalKT} `, { indent: { left: 708 } }),
         createTextPara(`- Số tiết tự học: ${syllabus.info.hours.selfStudy}`, { indent: { left: 708 } }),
         createTextPara(`Bộ môn, khoa tham gia giảng dạy: ${syllabus.info.contact}`),
         
@@ -662,45 +677,44 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
         new Paragraph({ text: "" })
     );
 
-    // 6. MỤC V: CẤU TRÚC HỌC PHẦN
-    sections.push(
-        new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
-        new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-                new TableRow({
-                    children: [
-                        createCell("STT", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
-                        createCell("Nội dung", { bold: true, width: { size: 35, type: WidthType.PERCENTAGE } }),
-                        createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
-                        createCell("Số tiết", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
-                        createCell("LT", { bold: true }), createCell("TL", { bold: true }),
-                        createCell("THN", { bold: true }), createCell("THĐ", { bold: true }),
-                        createCell("BT", { bold: true }), createCell("KT", { bold: true }),
-                        createCell("...", { bold: true }), createCell("Học liệu", { bold: true })
-                    ]
-                }),
-                ...syllabus.structure.map((it, idx) => new TableRow({
-                    children: [
-                        createCell(it.isTest ? "*" : getAutoSTT(idx)),
-                        createCell(it.title, { alignment: AlignmentType.LEFT, bold: it.level === 0 }),
-                        createCell((it.level === 0 || it.isTest) ? it.clo : "-"),
-                        createCell(calculateRowTotal(idx).toString()),
-                        createCell(getAggregatedValue(idx, 'lt').toString()),
-                        createCell(getAggregatedValue(idx, 'tl').toString()),
-                        createCell(getAggregatedValue(idx, 'thn').toString()),
-                        createCell(getAggregatedValue(idx, 'thd').toString()),
-                        createCell(getAggregatedValue(idx, 'bt').toString()),
-                        createCell(getAggregatedValue(idx, 'kt').toString()),
-                        createCell(getAggregatedValue(idx, 'extra').toString()),
-                        createCell(it.level === 0 ? (it.material || []).join(",") : "")
-                    ]
-                }))
-            ]
-        }),
-        new Paragraph({ text: "" })
-    );
-
+sections.push(
+    new Paragraph({ children: [new TextRun({ text: "V. CẤU TRÚC HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+    new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+            new TableRow({
+                children: [
+                    createCell("STT", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+                    createCell("Nội dung", { bold: true, width: { size: 35, type: WidthType.PERCENTAGE } }),
+                    createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+                    createCell("Số tiết", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+                    createCell("LT", { bold: true }), createCell("TL", { bold: true }),
+                    createCell("THN", { bold: true }), createCell("THĐ", { bold: true }),
+                    createCell("BT", { bold: true }), createCell("KT", { bold: true }),
+                    createCell("...", { bold: true }), createCell("Học liệu", { bold: true })
+                ]
+            }),
+            ...syllabus.structure.map((it, idx) => new TableRow({
+                children: [
+                    createCell(it.isTest ? "*" : getAutoSTT(idx)),
+                    createCell(it.title, { alignment: AlignmentType.LEFT, bold: it.level === 0 }),
+                    createCell((it.level === 0 || it.isTest) ? it.clo : "-"),
+                    // Sử dụng hàm formatNum cho tất cả các ô số liệu
+                    createCell(formatNum(calculateRowTotal(idx))),
+                    createCell(formatNum(getAggregatedValue(idx, 'lt'))),
+                    createCell(formatNum(getAggregatedValue(idx, 'tl'))),
+                    createCell(formatNum(getAggregatedValue(idx, 'thn'))),
+                    createCell(formatNum(getAggregatedValue(idx, 'thd'))),
+                    createCell(formatNum(getAggregatedValue(idx, 'bt'))),
+                    createCell(formatNum(getAggregatedValue(idx, 'kt'))),
+                    createCell(formatNum(getAggregatedValue(idx, 'extra'))),
+                    createCell(it.level === 0 ? (it.material || []).join(", ") : "")
+                ]
+            }))
+        ]
+    }),
+    new Paragraph({ text: "" })
+);
 // 7. MỤC VI: KẾ HOẠCH DẠY HỌC CHI TIẾT
 sections.push(
   new Paragraph({
@@ -885,7 +899,7 @@ materialContentParas.push({ text: "2. Học liệu tham khảo:", options: { bol
 
 // 3. Vật chất / Thiết bị
 materialContentParas.push({ text: "3. Vật chất:", options: { bold: true } });
-materialContentParas.push({ text: "..............................................................................................................................." });
+materialContentParas.push({ text: "" });
 
 // Thêm section VIII vào document
 addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContentParas);
@@ -1374,10 +1388,18 @@ sections.push(
                                                                     <td key={field} className="p-1 border-r">
                                                                         <input 
                                                                             type="number" 
+                                                                            // Thêm step="0.1" hoặc "any" để cho phép số thập phân
+                                                                            step="0.5" 
                                                                             disabled={!canEditThis || isParent} 
                                                                             className="table-input" 
+                                                                            // Hiển thị giá trị (giữ nguyên nếu là số)
                                                                             value={getAggregatedValue(idx, field) || ''} 
-                                                                            onChange={e => updateStructureField(idx, field, parseInt(e.target.value) || 0)} 
+                                                                            onChange={e => {
+                                                                                // Thay parseInt bằng parseFloat để giữ lại phần thập phân
+                                                                                // Thay dấu phẩy thành dấu chấm nếu người dùng nhập kiểu Việt Nam
+                                                                                const val = e.target.value.replace(',', '.');
+                                                                                updateStructureField(idx, field, parseFloat(val) || 0);
+                                                                            }} 
                                                                         />
                                                                     </td>
                                                                 ))}

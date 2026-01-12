@@ -128,16 +128,44 @@
     teachingPlan: {},
 
  // Chuyển từ mảng [ ] sang đối tượng { }
-    assessmentPlan: {
-        'A1.1': { form: 'Thường xuyên 1', time: ' Trong suốt quá trình học tập học phần ', method: ' Kiểm tra miệng, Tính chuyên cần, Thái độ học tập ', criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập. ', weight: '10' },
-        'A1.2': { form: 'Thường xuyên 2', time: ' Trong suốt quá trình học tập học phần ', method: ' Kiểm tra miệng, Tính chuyên cần, Thái độ học tập ', criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập. ', weight: '10' },
-        'A1.3': { form: 'Thường xuyên 3', time: ' Trong suốt quá trình học tập học phần ', method: ' Kiểm tra miệng, Tính chuyên cần, Thái độ học tập ', criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập. ', weight: '10' },
-        'A2.1': { form: 'Quá trình 1', time: ' Sau khi kết thúc bài ', method: 'Viết', criteria: 'Kiến thức', weight: '20' },
-        'A2.2': { form: 'Quá trình 2', time: ' Sau khi kết thúc bài ', method: 'Viết', criteria: 'Kiến thức', weight: '20' },
-        'A3.1': { form: 'Kết thúc', time: ' Sau khi học xong học phần ', method: 'Vấn đáp', criteria: 'Tổng hợp', weight: '40' }
-
-
+assessments: [
+    { 
+        examCode: 'A1.1', 
+        form: 'Thường xuyên 1', 
+        time: 'Trong suốt quá trình học tập học phần', 
+        method: 'Kiểm tra miệng, Tính chuyên cần, Thái độ học tập', 
+        criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập.', 
+        clo: 'HP1', 
+        weight: '10' 
     },
+    { 
+        examCode: 'A1.2', 
+        form: 'Thường xuyên 2', 
+        time: 'Trong suốt quá trình học tập học phần', 
+        method: 'Kiểm tra miệng, Tính chuyên cần, Thái độ học tập', 
+        criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập.', 
+        clo: 'HP2', 
+        weight: '10' 
+    },
+    { 
+        examCode: 'A2.1', 
+        form: 'Quá trình 1', 
+        time: 'Sau khi kết thúc bài', 
+        method: 'Viết', 
+        criteria: 'Kiến thức', 
+        clo: 'HP1, HP2', 
+        weight: '20' 
+    },
+    { 
+        examCode: 'A3.1', 
+        form: 'Kết thúc', 
+        time: 'Sau khi học xong học phần', 
+        method: 'Vấn đáp', 
+        criteria: 'Tổng hợp', 
+        clo: 'HP1, HP2, HP3, HP4', 
+        weight: '40' 
+    }
+  ],
 
     materials: {
         required: [''],
@@ -371,7 +399,46 @@
                 return num.toString().replace('.', ','); 
             };
 
-            
+const insertAssessmentRowAfter = (index) => {
+    const newRow = {
+        form: '',
+        examCode: '',
+        time: '',
+        method: '',
+        criteria: '',
+        clo: '',
+        weight: ''
+    };
+
+    setSyllabus(prev => {
+        const next = [...(prev.assessments || [])];
+        next.splice(index + 1, 0, newRow);
+        return { ...prev, assessments: next };
+    });
+};
+
+const removeAssessmentRow = (index) => {
+    setSyllabus(prev => {
+        if (!prev.assessments || prev.assessments.length <= 1) {
+            return prev; // ❌ Không cho xóa hàng duy nhất
+        }
+
+        return {
+            ...prev,
+            assessments: prev.assessments.filter((_, i) => i !== index)
+        };
+    });
+};
+
+
+const updateAssessmentRow = (index, field, value) => {
+    setSyllabus(prev => {
+        const next = [...prev.assessments];
+        next[index] = { ...next[index], [field]: value };
+        return { ...prev, assessments: next };
+    });
+};
+
 
 const exportWord = async () => {
     const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } = window.docx;
@@ -799,56 +866,65 @@ sections.push(
 
 // 7. MỤC VII: ĐÁNH GIÁ KẾT QUẢ HỌC TẬP
 sections.push(
-  new Paragraph({
-    children: [
-      new TextRun({
-        text: "VII. ĐÁNH GIÁ KẾT QUẢ HỌC TẬP",
-        bold: true,
-        font: STYLES.font,
-        size: STYLES.size
-      })
-    ]
-  }),
-
-  new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [
-      // HEADER
-      new TableRow({
+    new Paragraph({
         children: [
-          createCell("Hình thức đánh giá", { bold: true, width: { size: 20, type: WidthType.PERCENTAGE } }),
-          createCell("Mã", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
-          createCell("Thời điểm đánh giá", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
-          createCell("Phương pháp đánh giá", { bold: true, width: { size: 20, type: WidthType.PERCENTAGE } }),
-          createCell("Tiêu chí đánh giá", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
-          createCell("Đáp ứng CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
-          createCell("Tỉ lệ (%)", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } })
+            new TextRun({
+                text: "VII. ĐÁNH GIÁ KẾT QUẢ HỌC TẬP",
+                bold: true,
+                font: STYLES.font,
+                size: STYLES.size
+            })
         ]
-      }),
+    }),
 
-      // BODY
-      ...getAssessmentRows().map((r) => {
-        // Lấy dữ liệu mới nhập từ state assessmentPlan
-        const p = assessmentPlan[r.examCode] || {}; // <-- quan trọng
+    new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+            // HEADER
+            new TableRow({
+                children: [
+                    createCell("Hình thức đánh giá", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
+                    createCell("Mã", { bold: true, width: { size: 8, type: WidthType.PERCENTAGE } }),
+                    createCell("Thời điểm đánh giá", { bold: true, width: { size: 15, type: WidthType.PERCENTAGE } }),
+                    createCell("Phương pháp đánh giá", { bold: true, width: { size: 22, type: WidthType.PERCENTAGE } }),
+                    createCell("Tiêu chí đánh giá", { bold: true, width: { size: 22, type: WidthType.PERCENTAGE } }),
+                    createCell("Đáp ứng CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+                    createCell("Tỉ lệ (%)", { bold: true, width: { size: 8, type: WidthType.PERCENTAGE } })
+                ]
+            }),
 
-        return new TableRow({
-          children: [
-            createMultiLineCell([p.form || ""], { width: { size: 20, type: WidthType.PERCENTAGE } }),
-            createMultiLineCell([r.examCode || ""], { width: { size: 10, type: WidthType.PERCENTAGE } }),
-            createMultiLineCell([p.time || ""], { width: { size: 15, type: WidthType.PERCENTAGE } }),
-            createMultiLineCell([p.method || ""], { width: { size: 20, type: WidthType.PERCENTAGE } }),
-            createMultiLineCell([p.criteria || ""], { width: { size: 15, type: WidthType.PERCENTAGE } }),
-            createMultiLineCell([r.clo || ""], { width: { size: 10, type: WidthType.PERCENTAGE } }),
-            createMultiLineCell([p.weight || ""], { width: { size: 10, type: WidthType.PERCENTAGE } })
-          ]
-        });
-      })
-    ]
-  }),
+            // BODY: Duyệt trực tiếp từ mảng syllabus.assessments
+            ...(syllabus.assessments || []).map((row) => {
+                return new TableRow({
+                    children: [
+                        // Cột 1: Hình thức (Tách dòng theo \n nếu có)
+                        createMultiLineCell((row.form || "").split("\n"), { width: { size: 15, type: WidthType.PERCENTAGE } }),
+                        
+                        // Cột 2: Mã
+                        createCell(row.examCode || "", { width: { size: 8, type: WidthType.PERCENTAGE } }),
+                        
+                        // Cột 3: Thời điểm
+                        createMultiLineCell((row.time || "").split("\n"), { width: { size: 15, type: WidthType.PERCENTAGE } }),
+                        
+                        // Cột 4: Phương pháp
+                        createMultiLineCell((row.method || "").split("\n"), { width: { size: 22, type: WidthType.PERCENTAGE } }),
+                        
+                        // Cột 5: Tiêu chí
+                        createMultiLineCell((row.criteria || "").split("\n"), { width: { size: 22, type: WidthType.PERCENTAGE } }),
+                        
+                        // Cột 6: Đáp ứng CĐR (Lấy giá trị thủ công từ row.clo)
+                        createCell(row.clo || "", { width: { size: 10, type: WidthType.PERCENTAGE } }),
+                        
+                        // Cột 7: Tỉ lệ
+                        createCell(row.weight || "", { width: { size: 8, type: WidthType.PERCENTAGE }, alignment: AlignmentType.CENTER })
+                    ]
+                });
+            })
+        ]
+    }),
 
-  new Paragraph({ text: "" })
+    new Paragraph({ text: "" })
 );
-
     
 
 
@@ -1609,99 +1685,161 @@ sections.push(
 
 
 {activeTab === 'assessment' && (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in font-times">
+
         <h3 className="text-xl font-bold uppercase text-slate-800">
             VII. ĐÁNH GIÁ KẾT QUẢ HỌC TẬP
         </h3>
 
         <div className="overflow-x-auto border rounded-xl shadow-lg bg-white">
-            <table className="w-full text-[14px] border-collapse font-times">
+            <table className="w-full text-[14px] border-collapse">
                 <thead className="bg-slate-100 font-bold text-slate-700">
                     <tr>
-                        <th className="p-2 border w-40">Hình thức đánh giá</th>
-                        <th className="p-2 border w-24">Mã</th>
-                        <th className="p-2 border w-40">Thời điểm đánh giá</th>
-                        <th className="p-2 border w-48">Phương pháp đánh giá</th>
-                        <th className="p-2 border w-48">Tiêu chí đánh giá</th>
-                        <th className="p-2 border w-28 text-center">Đáp ứng CĐR</th>
-                        <th className="p-2 border w-24 text-center">Tỉ lệ (%)</th>
+                        <th className="p-3 border text-center w-[15%]">Hình thức đánh giá</th>
+                        <th className="p-3 border text-center w-[8%]">Mã</th>
+                        <th className="p-3 border text-center w-[15%]">Thời điểm</th>
+                        <th className="p-3 border text-center w-[22%]">Phương pháp</th>
+                        <th className="p-3 border text-center w-[22%]">Tiêu chí</th>
+                        <th className="p-3 border text-center w-[10%]">Đáp ứng CĐR</th>
+                        <th className="p-3 border text-center w-[8%]">Tỉ lệ (%)</th>
+                        <th className="p-1 border w-12"></th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {getAssessmentRows().map((row) => {
-                        // Lấy dữ liệu từ state assessmentPlan
-                        const plan = assessmentPlan[row.examCode] || {};
+                    {(syllabus.assessments || []).map((row, index) => (
+                        <tr
+                            key={index}
+                            className="group hover:bg-blue-50/30 align-top transition-colors"
+                        >
+                            {/* 1. Hình thức */}
+                            <td className="p-2 border">
+                                <textarea
+                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px]"
+                                    value={row.form}
+                                    onChange={e => updateAssessmentRow(index, 'form', e.target.value)}
+                                    placeholder="Ví dụ: Đánh giá thường xuyên 1"
+                                />
+                            </td>
 
-                        return (
-                            <tr key={row.examCode} className="hover:bg-slate-50 align-top">
-                                {/* Cột 1: Hình thức đánh giá */}
-                                <td className="p-2 border">
-                                    <input
-                                        className="w-full bg-transparent outline-none focus:bg-blue-50 px-1 rounded"
-                                        value={plan.form || ''}
-                                        disabled={!canEditThis}
-                                        onChange={e => updateAssessment(row.examCode, 'form', e.target.value)}
-                                    />
-                                </td>
+                            {/* 2. Mã */}
+                            <td className="p-2 border bg-slate-50/50">
+                                <input
+                                    className="w-full bg-transparent outline-none text-center font-mono font-bold text-blue-700"
+                                    value={row.examCode}
+                                    onChange={e => updateAssessmentRow(index, 'examCode', e.target.value)}
+                                    placeholder="A1.1"
+                                />
+                            </td>
 
-                                {/* Cột 2: Mã (Tự động - Cố định) */}
-                                <td className="p-2 border text-center font-mono font-bold text-blue-700 bg-slate-50">
-                                    {row.examCode}
-                                </td>
+                            {/* 3. Thời điểm */}
+                            <td className="p-2 border">
+                                <textarea
+                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px]"
+                                    value={row.time}
+                                    onChange={e => updateAssessmentRow(index, 'time', e.target.value)}
+                                />
+                            </td>
 
-                                {/* Cột 3: Thời điểm */}
-                                <td className="p-2 border">
-                                    <input
-                                        className="w-full bg-transparent outline-none focus:bg-blue-50 px-1 rounded"
-                                        value={plan.time || ''}
-                                        disabled={!canEditThis}
-                                        onChange={e => updateAssessment(row.examCode, 'time', e.target.value)}
-                                    />
-                                </td>
+                            {/* 4. Phương pháp */}
+                            <td className="p-2 border">
+                                <textarea
+                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px] text-[13px]"
+                                    value={row.method}
+                                    onChange={e => updateAssessmentRow(index, 'method', e.target.value)}
+                                />
+                            </td>
 
-                                {/* Cột 4: Phương pháp */}
-                                <td className="p-2 border">
-                                    <textarea
-                                        rows="2"
-                                        className="w-full bg-transparent outline-none resize-none focus:bg-blue-50 px-1 rounded"
-                                        value={plan.method || ''}
-                                        disabled={!canEditThis}
-                                        onChange={e => updateAssessment(row.examCode, 'method', e.target.value)}
-                                    />
-                                </td>
+                            {/* 5. Tiêu chí */}
+                            <td className="p-2 border">
+                                <textarea
+                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px] text-[12px] leading-tight"
+                                    value={row.criteria}
+                                    onChange={e => updateAssessmentRow(index, 'criteria', e.target.value)}
+                                />
+                            </td>
 
-                                {/* Cột 5: Tiêu chí */}
-                                <td className="p-2 border">
-                                    <textarea
-                                        rows="2"
-                                        className="w-full bg-transparent outline-none resize-none focus:bg-blue-50 px-1 rounded"
-                                        value={plan.criteria || ''}
-                                        disabled={!canEditThis}
-                                        onChange={e => updateAssessment(row.examCode, 'criteria', e.target.value)}
-                                    />
-                                </td>
+                            {/* 6. CĐR */}
+                            <td className="p-2 border text-center">
+                                <input
+                                    className="w-full bg-transparent outline-none text-center font-bold text-indigo-700"
+                                    value={row.clo}
+                                    onChange={e => updateAssessmentRow(index, 'clo', e.target.value)}
+                                    placeholder="HP1, HP2"
+                                />
+                            </td>
 
-                                {/* Cột 6: Đáp ứng CĐR (Tự động - Cố định) */}
-                                <td className="p-2 border text-center font-bold text-indigo-700 bg-slate-50">
-                                    {row.clo}
-                                </td>
+                            {/* 7. Tỉ lệ */}
+                            <td className="p-2 border">
+                            <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="10"
+                                className="w-full bg-transparent outline-none text-center font-bold text-emerald-700 appearance-none"
+                                value={row.weight ?? ''}
+                                onChange={e =>
+                                    updateAssessmentRow(
+                                        index,
+                                        'weight',
+                                        e.target.value === '' ? '' : Number(e.target.value)
+                                    )
+                                }
+                                placeholder="10"
+                            />
 
-                                {/* Cột 7: Tỉ lệ */}
-                                <td className="p-2 border text-center">
-                                    <input
-                                        type="text"
-                                        className="w-full text-center bg-transparent outline-none font-bold text-emerald-700 focus:bg-blue-50 rounded"
-                                        value={plan.weight || ''}
-                                        disabled={!canEditThis}
-                                        onChange={e => updateAssessment(row.examCode, 'weight', e.target.value)}
-                                    />
-                                </td>
-                            </tr>
-                        );
-                    })}
+                            </td>
+
+                            {/* ➕ / 🗑️ */}
+                            <td className="p-1 border text-center align-middle">
+                                <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                    {canEditThis && (
+                                        <button
+                                            onClick={() => insertAssessmentRowAfter(index)}
+                                            className="text-green-500 hover:text-green-700"
+                                            title="Thêm dòng phía dưới"
+                                        >
+                                            <Icons.Plus />
+                                        </button>
+                                    )}
+
+                                    {canEditThis && (
+                                        <button
+                                            onClick={() => removeAssessmentRow(index)}
+                                            className="text-slate-300 hover:text-red-500"
+                                            title="Xóa dòng"
+                                        >
+                                            <Icons.Trash />
+                                        </button>
+                                    )}
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
+        </div>
+
+        {/* Tổng tỉ lệ */}
+        <div className="flex justify-end pr-4">
+            {(() => {
+                const total = (syllabus.assessments || [])
+                    .reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
+
+                return (
+                    <div className={`flex items-center gap-2 p-3 rounded-lg border-2
+                        ${total === 100
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-red-50 border-red-200 text-red-700'}`}
+                    >
+                        <span className="font-bold">Tổng tỉ lệ:</span>
+                        <span className="text-xl font-black">{total}%</span>
+                        {total !== 100 && (
+                            <span className="text-xs italic">(Cần đạt 100%)</span>
+                        )}
+                    </div>
+                );
+            })()}
         </div>
     </div>
 )}

@@ -103,13 +103,13 @@
     info: {
         name: '',
         code: '',
-        major: '',
+        major: 'Kỹ thuật Xe máy quân sự',
         type: 'Bắt buộc',
         prerequisites: '',
         parallel: '',
         contact: 'Bộ môn Nguyên lý Động cơ - Điện, Khoa Ô tô',
         credits: { theory: 0, practice: 0, internship: 0, total: 0 },
-        hours: { classroom: 0, theory: 0, practice: 0, internship: 0, exam: 2, selfStudy: 0 }
+        hours: { classroom: 0, theory: 0, practice: 0, internship: 0, exam: 0, selfStudy: 0 }
     },
 
     objectives: '',
@@ -314,6 +314,7 @@ assessments: [
                 return () => unsubscribe();
             }, [user]);
 
+            
             const handleLogin = async () => {
                 const { signInWithPopup, GoogleAuthProvider } = window.fb;
                 const provider = new GoogleAuthProvider();

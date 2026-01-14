@@ -1374,10 +1374,14 @@ sections.push(
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <p className="mt-3 text-[10px] text-slate-400 italic font-times">
+                                            <p className="text-[14px] leading-relaxed italic text-amber-700">
                                                 * Chỉ liệt kê các CĐRCTĐT/CB thực sự hỗ trợ, đóng góp..<br/>
-                                                ** Ghi rõ mức độ đóng góp: I, R, M và học phần A.<br/>
-                                                *** Hàng cuối cùng: tổng hợp mức đóng góp cao nhất tương ứng với từng cột CĐRCTĐT/CB (Tự động)
+                                                Mức I (Introduced): Học phần hỗ trợ đạt được CĐR CTĐT ở mức băt đầu.<br/>
+Mức R (Reinforced): Học phần hỗ trợ đạt được CĐR CTĐT ở nâng cao hơn  mức bắt đầu.<br/>
+Mức M (Mastery): Học phần hỗ trợ mạnh mẽ (mức cao) người học đạt được CĐR CTĐT ở. <br/>
+Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việc đạt được các CĐR CTĐT ở. Đây là học phần cần thu thập dữ liệu để đo lường đánh giá mức độ đạt được của người học.
+<br/>
+                                                ** Hàng cuối cùng: tổng hợp mức đóng góp cao nhất tương ứng với từng cột CĐRCTĐT/CB (Tự động)
                                             </p>
                                         </section>
                                     </div>
@@ -1549,7 +1553,7 @@ sections.push(
                                                 </tfoot>
                                             </table>
                                         </div>
-                                        <p className="text-[11px] text-slate-400 italic px-2">
+                                        <p className="text-[14px] leading-relaxed italic text-amber-700">
                                             * Lưu ý: Các ô Số tiết của Bài/Mục sẽ tự động cộng dồn từ cấp con bên dưới. Chỉ nhập trực tiếp vào hàng không có phân cấp nhỏ hơn.<br/>
                                             ** Chuẩn đầu ra (CĐR); Lý thuyết (LT); Thực hành (TH), ngày (N), đêm (Đ); Thảo luận (TL); Bài tập, thí nghiệm (BT, TN); Kiểm tra (KT); Hướng dẫn (HD).
                                         </p>
@@ -1678,14 +1682,14 @@ sections.push(
       </table>
     </div>
 
-    <p className="text-[10px] text-slate-400 italic">
+    <p className="text-[14px] leading-relaxed italic text-amber-700">
       * Dữ liệu các cột 1, 2, 3 được đồng bộ tự động từ Mục 5. Cấu trúc học phần.
     </p>
   </div>
 )}
 
 
-{activeTab === 'assessment' && (
+                                {activeTab === 'assessment' && (
     <div className="space-y-6 animate-fade-in font-times">
 
         <h3 className="text-xl font-bold uppercase text-slate-800">
@@ -1868,6 +1872,12 @@ sections.push(
                                             <h4 className="text-sm font-bold text-slate-700 uppercase">3. Cơ sở vật chất phục vụ dạy học</h4>
                                             <textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl outline-none text-sm shadow-inner italic bg-slate-50 font-times focus:ring-1 focus:ring-blue-400" value={syllabus.materials?.equipment} onChange={e => setSyllabus({...syllabus, materials: {...syllabus.materials, equipment: e.target.value}})} placeholder="Các trang thiết bị chuyên dụng, phòng thí nghiệm..." />
                                         </section>
+                                            <p className="text-[14px] leading-relaxed italic text-amber-700">
+                                            * Các giáo trình, tài liệu tham khảo, các phần mềm, giáo trình điện tử.
+                                            Liệt kê không quá 6 tài liệu.
+                                            </p>
+
+
                                     </div>
                                 )}
 

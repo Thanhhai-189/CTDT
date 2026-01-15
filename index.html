@@ -691,7 +691,6 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
     // 4. MỤC III: CHUẨN ĐẦU RA & MA TRẬN
     sections.push(
         new Paragraph({ children: [new TextRun({ text: "III. CHUẨN ĐẦU RA", bold: true, size: STYLES.size, font: STYLES.font })] }),
-        // Thay thế đoạn new Table({...}) cũ bằng đoạn này:
         ...syllabus.clos.map(c => 
             new Paragraph({
                 children: [
@@ -711,7 +710,7 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
             })
         ),
         new Paragraph({ text: "", spacing: { before: 200 } }),
-        createTextPara("Ma trận đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:", { italic: true }),
+        createTextPara("Bảng đóng góp của chuẩn đầu ra học phần đối với chuẩn đầu ra CTĐT:", ),
         new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
@@ -721,12 +720,19 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
                         ...syllabus.cloMatrix.plos.map(p => createCell(p, { bold: true }))
                     ]
                 }),
-                ...syllabus.clos.map(c => new TableRow({
-                    children: [
-                        createCell(c.id, { bold: true }),
-                        ...syllabus.cloMatrix.plos.map(p => createCell(syllabus.cloMatrix.mapping[c.id]?.[p] || "-"))
-                    ]
-                })),
+...syllabus.clos.map(c =>
+    new TableRow({
+        children: [
+            createCell((c.id || "").toUpperCase(), { bold: true }),
+
+            ...syllabus.cloMatrix.plos.map(p =>
+                createCell(
+                    (syllabus.cloMatrix.mapping[c.id]?.[p] || "").toUpperCase()
+                )
+            )
+        ]
+    })
+),
                 new TableRow({
                     children: [
                         createCell(syllabus.info.name || "Chưa nhập thông tin.", { bold: true }),
@@ -788,7 +794,7 @@ sections.push(
   new Paragraph({
     children: [
       new TextRun({
-        text: "VI. KẾ HOẠCH DẠY HỌC CHI TIẾT",
+        text: "VI. KẾ HOẠCH VÀ PHƯƠNG PHÁP DẠY HỌC",
         bold: true,
         font: STYLES.font,
         size: STYLES.size
@@ -976,7 +982,20 @@ materialContentParas.push({ text: "2. Học liệu tham khảo:", options: { bol
 
 // 3. Vật chất / Thiết bị
 materialContentParas.push({ text: "3. Vật chất:", options: { bold: true } });
-materialContentParas.push({ text: "" });
+if (syllabus.materials?.equipment?.trim()) {
+    syllabus.materials.equipment
+        .split(/\n|;/) // hỗ trợ xuống dòng hoặc ;
+        .map(x => x.trim())
+        .filter(Boolean)
+        .forEach(item => {
+            materialContentParas.push({
+                text: `- ${item}`
+            });
+        });
+        } else {
+    materialContentParas.push({
+        text: ""
+    });}
 
 // Thêm section VIII vào document
 addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContentParas);

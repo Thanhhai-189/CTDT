@@ -682,7 +682,7 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
 
     // 3. MỤC II: MỤC TIÊU
     sections.push(
-        new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        new Paragraph({ children: [new TextRun({ text: "II. MỤC TIÊU", bold: true, size: STYLES.size, font: STYLES.font })] }),
         createTextPara(syllabus.objectives || "Chưa nhập thông tin."),
         new Paragraph({ text: "" })
     );
@@ -745,7 +745,7 @@ sections.push(new Paragraph({ text: "", spacing: { after: 200 } }));
 
     // 5. MỤC IV: MÔ TẢ HỌC PHẦN
     sections.push(
-        new Paragraph({ children: [new TextRun({ text: "IV. MÔ TẢ HỌC PHẦN", bold: true, size: STYLES.size, font: STYLES.font })] }),
+        new Paragraph({ children: [new TextRun({ text: "IV. MÔ TẢ", bold: true, size: STYLES.size, font: STYLES.font })] }),
         createTextPara(syllabus.description || "Chưa nhập thông tin."),
         new Paragraph({ text: "" })
     );
@@ -997,7 +997,7 @@ if (syllabus.materials?.equipment?.trim()) {
     });}
 
 // Thêm section VIII vào document
-addFullSection("VIII", "TÀI LIỆU VÀ THIẾT BỊ", materialContentParas);
+addFullSection("VIII", "CƠ SỞ VẬT CHẤT, HỌC LIỆU", materialContentParas);
 
 
 // 9. MỤC IX: QUY ĐỊNH CỦA HỌC PHẦN

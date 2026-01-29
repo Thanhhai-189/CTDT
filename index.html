@@ -771,7 +771,7 @@ sections.push(
                 children: [
                     createCell(it.isTest ? "*" : getAutoSTT(idx)),
                     createCell(it.title, { alignment: AlignmentType.LEFT, bold: it.level === 0 }),
-                    createCell((it.level === 0 || it.isTest) ? it.clo : "-"),
+                    createCell((it.level === 0 || it.isTest) ? it.clo : ""),
                     // Sử dụng hàm formatNum cho tất cả các ô số liệu
                     createCell(formatNum(calculateRowTotal(idx))),
                     createCell(formatNum(getAggregatedValue(idx, 'lt'))),

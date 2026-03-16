@@ -555,25 +555,17 @@ const createMultiLineCell = (lines, options = {}) =>
     width: options.width,
     verticalAlign: VerticalAlign.CENTER,
 
-    children: (Array.isArray(lines) ? lines : [lines]).map(line =>
-      new Paragraph({
-        alignment: options.alignment || AlignmentType.LEFT,
+    children: (Array.isArray(lines) ? lines : [lines]).map(line => {
 
-        spacing: {
-          before: 0,
-          after: 0,
-          line: 240
-        },
+      const text = typeof line === "string" ? line : line.text;
+      const bold = typeof line === "object" ? !!line.bold : false;
 
-        children: [
-          new TextRun({
-            text: line || "",
-            font: STYLES.font,
-            size: STYLES.size
-          })
-        ]
-      })
-    )
+      return tablePara(text, {
+        bold,
+        alignment: options.alignment || AlignmentType.CENTER
+      });
+
+    })
   });
 
     // --- CẤU HÌNH ĐỊNH DẠNG CHUẨN SQKT ---
@@ -636,15 +628,25 @@ const createTableCell = (lines, width, bold = false) =>
     )
   });
     // Hàm tiện ích tạo ô trong bảng
-    const createCell = (text, options = {}) => new TableCell({
-        children: [new Paragraph({ 
-            children: [new TextRun({ text: text || "", bold: options.bold, size: STYLES.size, font: STYLES.font })],
-            alignment: options.alignment || AlignmentType.CENTER
-        })],
-        verticalAlign: VerticalAlign.CENTER,
-        shading: options.shading,
+    const createCell = (text, options = {}) =>
+    new TableCell({
+        columnSpan: options.columnSpan,
         width: options.width,
-        borders: options.borders
+        verticalAlign: VerticalAlign.CENTER,
+
+        children: [
+        new Paragraph({
+            alignment: options.alignment || AlignmentType.CENTER,
+            children: [
+            new TextRun({
+                text: String(text ?? ""),
+                bold: options.bold || false,
+                font: STYLES.font,
+                size: STYLES.size
+            })
+            ]
+        })
+        ]
     });
 
     // Hàm tiện ích tạo đoạn văn bản có thụt lề 1cm và định dạng chuẩn
@@ -673,12 +675,20 @@ const createTableCell = (lines, width, bold = false) =>
     });
     };
     const sections = [];
-    // Tính tổng cột KT (Kiểm tra, thi) từ mảng structure
-const totalKT = syllabus.structure.reduce((sum, item) => {
-    // Chỉ cộng các hàng ở mức độ nhỏ nhất (không phải hàng cha có chứa con)
-    // Hoặc cộng tất cả nếu logic của bạn cho phép nhập trực tiếp
-    return sum + (parseInt(item.kt) || 0);
-}, 0);
+    // Tính tổng cột  từ mảng structure
+    const calculateTotal = (field) => {
+    return syllabus.structure.reduce((sum, item) => {
+        return sum + (parseInt(item[field]) || 0);
+    }, 0);
+    };
+    const totalLT = calculateGrandTotal("lt");
+    const totalTL = calculateTotal("tl");
+    const totalTHN = calculateTotal("thn");
+    const totalTHD = calculateTotal("thd");
+    const totalBT = calculateTotal("bt");
+    const totalKT = calculateTotal("kt");
+    const totalExtra = calculateTotal("extra");
+    const totalHours =    totalLT + totalTL + totalTHN + totalTHD + totalBT + totalKT + totalExtra;
 
 // 1. PHẦN TIÊU ĐỀ (Sử dụng Table để căn lề chuẩn 2 bên)
 const headerTable = new Table({
@@ -811,11 +821,11 @@ sections.push(
         createTextPara(`Học phần song hành: ${syllabus.info.parallel || "Không"}`),
         createTextPara(`Số tín chỉ: ${syllabus.info.credits.total}`),
         createTextPara(`Số tiết: ${syllabus.info.hours.classroom}`),
-        createTextPara(`- Số tiết lên lớp: ${syllabus.info.hours.classroom}`, { indent: { left: 708 } }),
-        createTextPara(`+ Lý thuyết: ${syllabus.info.hours.theory}`, { indent: { left: 1134 } }),
-        createTextPara(`+ Thực hành, thí nghiệm, bài tập, thảo luận: ${syllabus.info.hours.practice}`, { indent: { left: 1134 } }),
-        createTextPara(`- Thi, kiểm tra kết thúc: ${totalKT} `, { indent: { left: 708 } }),
-        createTextPara(`- Số tiết tự học: ${syllabus.info.hours.selfStudy}`, { indent: { left: 708 } }),
+        createTextPara(`- Số tiết lên lớp: ${totalHours}`),
+        createTextPara(`+ Lý thuyết: ${calculateGrandTotal("lt")}`),
+        createTextPara(`+ Thực hành, thí nghiệm, bài tập, thảo luận: ${totalTL+totalTHN + totalTHD+ totalBT + totalExtra}`),
+        createTextPara(`+ Kiểm tra định kỳ: ${totalKT} `),
+        createTextPara(`- Thi kiểm tra kết thúc: `),
         createTextPara(`Bộ môn, khoa tham gia giảng dạy: ${syllabus.info.contact}`),
                     );
 
@@ -902,46 +912,67 @@ sections.push(
     ]
   }),
 
-  createStandardTable([
+createStandardTable([
 
+  new TableRow({
+    children: [
+createCell("STT", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+createCell("Nội dung", { bold: true, width: { size: 35, type: WidthType.PERCENTAGE } }),
+createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
+createCell("Số tiết", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
+
+createCell("LT", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+createCell("TL", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+createCell("N", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+createCell("Đ", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+createCell("BT", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+createCell("KT", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+createCell("...", { bold: true, width: { size: 476, type: WidthType.DXA } }),
+
+createCell("Học liệu", { bold: true })
+    ]
+  }),
+
+  ...syllabus.structure.map((it, idx) =>
     new TableRow({
       children: [
-        createCell("STT", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
-        createCell("Nội dung", { bold: true, width: { size: 35, type: WidthType.PERCENTAGE } }),
-        createCell("CĐR", { bold: true, width: { size: 10, type: WidthType.PERCENTAGE } }),
-        createCell("Số tiết", { bold: true, width: { size: 5, type: WidthType.PERCENTAGE } }),
-        createCell("LT", { bold: true }),
-        createCell("TL", { bold: true }),
-        createCell("THN", { bold: true }),
-        createCell("THĐ", { bold: true }),
-        createCell("BT", { bold: true }),
-        createCell("KT", { bold: true }),
-        createCell("...", { bold: true }),
-        createCell("Học liệu", { bold: true })
+        createCell(it.isTest ? "*" : getAutoSTT(idx), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(it.title, { alignment: AlignmentType.LEFT, bold: it.level === 0 }),
+        createCell((it.level === 0 || it.isTest) ? it.clo : "", { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(calculateRowTotal(idx)), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "lt")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "tl")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "thn")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "thd")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "bt")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "kt")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+        createCell(formatNum(getAggregatedValue(idx, "extra")), { alignment: AlignmentType.center, bold: it.level === 0 }),
+
+        createCell(it.level === 0 ? (it.material || []).join(", ") : "", { alignment: AlignmentType.center, bold: it.level === 0 })
       ]
-    }),
+    })
+  ),
 
-    ...syllabus.structure.map((it, idx) =>
-      new TableRow({
-        children: [
-          createCell(it.isTest ? "*" : getAutoSTT(idx)),
-          createCell(it.title, { alignment: AlignmentType.LEFT, bold: it.level === 0 }),
-          createCell((it.level === 0 || it.isTest) ? it.clo : ""),
+  // ===== DÒNG TỔNG (GIỐNG UI) =====
+  new TableRow({
+    children: [
 
-          createCell(formatNum(calculateRowTotal(idx))),
-          createCell(formatNum(getAggregatedValue(idx, "lt"))),
-          createCell(formatNum(getAggregatedValue(idx, "tl"))),
-          createCell(formatNum(getAggregatedValue(idx, "thn"))),
-          createCell(formatNum(getAggregatedValue(idx, "thd"))),
-          createCell(formatNum(getAggregatedValue(idx, "bt"))),
-          createCell(formatNum(getAggregatedValue(idx, "kt"))),
-          createCell(formatNum(getAggregatedValue(idx, "extra"))),
+      createCell("Cộng", {bold: true, alignment: AlignmentType.center, columnSpan: 2 }),
+      createCell("",),
+      createCell(formatNum(calculateGrandTotal("total")), {bold: true}),
+      createCell(formatNum(calculateGrandTotal("lt")), { bold: true }),
+      createCell(formatNum(calculateGrandTotal("tl")), { bold: true }),
+      createCell(formatNum(calculateGrandTotal("thn")), { bold: true }),
+      createCell(formatNum(calculateGrandTotal("thd")), { bold: true }),
+      createCell(formatNum(calculateGrandTotal("bt")), { bold: true }),
+      createCell(formatNum(calculateGrandTotal("kt")), { bold: true }),
+      createCell(formatNum(calculateGrandTotal("extra")), { bold: true }),
+      createCell("", { columnSpan: 2 })
 
-          createCell(it.level === 0 ? (it.material || []).join(", ") : "")
-        ]
-      })
-    )
-  ]),
+    ]
+  })
+
+]),
 
   new Paragraph({ text: "" })
 );
@@ -992,8 +1023,9 @@ sections.push(
           children: [
 
             createMultiLineCell(
-              [`Bài ${lesson}`, `(${calculateRowTotal(idx)} tiết)`],
-              { width: { size: 15, type: WidthType.PERCENTAGE } }
+            [{ text: `Bài ${lesson}`, bold: true },{ text: `(${calculateRowTotal(idx)} tiết)`, bold: true}
+],              { width: { size: 15, type: WidthType.PERCENTAGE }, alignment: AlignmentType.CENTER }
+
             ),
 
             createMultiLineCell(

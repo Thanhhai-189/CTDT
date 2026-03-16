@@ -1094,12 +1094,14 @@ sections.push(
           ),
 
           createCell(
-            row.weight || "",
+            row.weight !== undefined && row.weight !== ""
+                ? String(row.weight)
+                : "",
             {
-              width: { size: 8, type: WidthType.PERCENTAGE },
-              alignment: AlignmentType.CENTER
+                width: { size: 8, type: WidthType.PERCENTAGE },
+                alignment: AlignmentType.CENTER
             }
-          )
+            )
 
         ]
       })
@@ -1910,116 +1912,145 @@ Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việ
                     </tr>
                 </thead>
 
-                <tbody>
-                    {(syllabus.assessments || []).map((row, index) => (
-                        <tr
+                        <tbody>
+                        {(syllabus.assessments || []).map((row, index) => {
+
+                        const handleChange = (field) => (e) =>
+                            updateAssessmentRow(index, field, e.target.value);
+
+                        const handleNumberChange = (e) => {
+                            const val = e.target.value;
+
+                            if (val === "") {
+                            updateAssessmentRow(index, "weight", "");
+                            return;
+                            }
+
+                            let num = Number(val);
+                            if (isNaN(num)) return;
+
+                            num = Math.max(0, Math.min(100, num));
+                            updateAssessmentRow(index, "weight", num);
+                        };
+
+                        const textareaClass =
+                            "w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px]";
+
+                        const inputClass =
+                            "w-full bg-transparent outline-none text-center";
+
+                        return (
+                            <tr
                             key={index}
                             className="group hover:bg-blue-50/30 align-top transition-colors"
-                        >
+                            >
+
                             {/* 1. Hình thức */}
                             <td className="p-2 border">
                                 <textarea
-                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px]"
-                                    value={row.form}
-                                    onChange={e => updateAssessmentRow(index, 'form', e.target.value)}
+                                className={textareaClass}
+                                value={row.form}
+                                onChange={handleChange("form")}
                                 />
                             </td>
 
                             {/* 2. Mã */}
                             <td className="p-2 border bg-slate-50/50">
                                 <input
-                                    className="w-full bg-transparent outline-none text-center font-mono font-bold text-blue-700"
-                                    value={row.examCode}
-                                    onChange={e => updateAssessmentRow(index, 'examCode', e.target.value)}
-                                    placeholder="A1.1"
+                                className={`${inputClass} font-mono font-bold text-blue-700`}
+                                value={row.examCode}
+                                onChange={handleChange("examCode")}
+                                placeholder="A1.1"
                                 />
                             </td>
 
                             {/* 3. Thời điểm */}
                             <td className="p-2 border">
                                 <textarea
-                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px]"
-                                    value={row.time}
-                                    onChange={e => updateAssessmentRow(index, 'time', e.target.value)}
+                                className={textareaClass}
+                                value={row.time}
+                                onChange={handleChange("time")}
                                 />
                             </td>
 
                             {/* 4. Phương pháp */}
                             <td className="p-2 border">
                                 <textarea
-                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px] text-[13px]"
-                                    value={row.method}
-                                    onChange={e => updateAssessmentRow(index, 'method', e.target.value)}
+                                className={`${textareaClass} text-[13px]`}
+                                value={row.method}
+                                onChange={handleChange("method")}
                                 />
                             </td>
 
                             {/* 5. Tiêu chí */}
                             <td className="p-2 border">
                                 <textarea
-                                    className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px] text-[12px] leading-tight"
-                                    value={row.criteria}
-                                    onChange={e => updateAssessmentRow(index, 'criteria', e.target.value)}
+                                className={`${textareaClass} text-[12px] leading-tight`}
+                                value={row.criteria}
+                                onChange={handleChange("criteria")}
                                 />
                             </td>
 
                             {/* 6. CĐR */}
                             <td className="p-2 border text-center">
                                 <input
-                                    className="w-full bg-transparent outline-none text-center font-bold text-indigo-700"
-                                    value={row.clo}
-                                    onChange={e => updateAssessmentRow(index, 'clo', e.target.value)}
-                                    placeholder="HP1, HP2"
+                                className={`${inputClass} font-bold text-indigo-700`}
+                                value={row.clo}
+                                onChange={handleChange("clo")}
+                                placeholder="HP1, HP2"
                                 />
                             </td>
 
                             {/* 7. Tỉ lệ */}
                             <td className="p-2 border">
-                            <input
+                                <input
                                 type="number"
-                                min="0"
-                                max="100"
-                                step="10"
-                                className="w-full bg-transparent outline-none text-center font-bold text-emerald-700 appearance-none"
-                                value={row.weight ?? ''}
-                                onChange={e =>
-                                    updateAssessmentRow(
-                                        index,
-                                        'weight',
-                                        e.target.value === '' ? '' : Number(e.target.value)
-                                    )
-                                }
+                                min={0}
+                                max={100}
+                                step={10}
+                                className={`${inputClass} font-bold text-emerald-700 appearance-none`}
+                                value={row.weight ?? ""}
                                 placeholder="10"
-                            />
-
+                                onKeyDown={(e) => {
+                                    if (["e", "E", "+", "-", "."].includes(e.key)) {
+                                    e.preventDefault();
+                                    }
+                                }}
+                                onChange={handleNumberChange}
+                                />
                             </td>
 
                             {/* ➕ / 🗑️ */}
                             <td className="p-1 border text-center align-middle">
                                 <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                    {canEditThis && (
-                                        <button
-                                            onClick={() => insertAssessmentRowAfter(index)}
-                                            className="text-green-500 hover:text-green-700"
-                                            title="Thêm dòng phía dưới"
-                                        >
-                                            <Icons.Plus />
-                                        </button>
-                                    )}
 
-                                    {canEditThis && (
-                                        <button
-                                            onClick={() => removeAssessmentRow(index)}
-                                            className="text-slate-300 hover:text-red-500"
-                                            title="Xóa dòng"
-                                        >
-                                            <Icons.Trash />
-                                        </button>
-                                    )}
+                                {canEditThis && (
+                                    <button
+                                    onClick={() => insertAssessmentRowAfter(index)}
+                                    className="text-green-500 hover:text-green-700"
+                                    title="Thêm dòng phía dưới"
+                                    >
+                                    <Icons.Plus />
+                                    </button>
+                                )}
+
+                                {canEditThis && (
+                                    <button
+                                    onClick={() => removeAssessmentRow(index)}
+                                    className="text-slate-300 hover:text-red-500"
+                                    title="Xóa dòng"
+                                    >
+                                    <Icons.Trash />
+                                    </button>
+                                )}
+
                                 </div>
                             </td>
-                        </tr>
-                    ))}
-                </tbody>
+
+                            </tr>
+                        );
+                        })}
+                        </tbody>
             </table>
         
 

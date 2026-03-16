@@ -2,8 +2,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CTĐT-SQKT 2026</title>
-    
+    <title>Biên soạn ĐCHP - SQKTQS</title>
+    <link rel="icon" type="image/png" href="/logo.png" />
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -237,30 +238,30 @@
 assessments: [
     { 
         examCode: 'A1.1', 
-        form: 'Thường xuyên 1', 
+        form: 'Thường xuyên', 
         time: 'Trong suốt quá trình học tập học phần', 
-        method: 'Kiểm tra miệng, Tính chuyên cần, Thái độ học tập', 
-        criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập.', 
+        method: 'Kiểm tra miệng', 
+        criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng.', 
         clo: 'HP1', 
         weight: '10' 
     },
     { 
         examCode: 'A1.2', 
-        form: 'Thường xuyên 2', 
+        form: '', 
         time: 'Trong suốt quá trình học tập học phần', 
-        method: 'Kiểm tra miệng, Tính chuyên cần, Thái độ học tập', 
-        criteria: 'Khả năng lĩnh hội nội dung bài học trước, độ sâu của kiến thức. Sự tiến bộ trong lĩnh hội kiến thức, rèn luyện kỹ năng; thời gian học tập, tự ôn…Lễ tiết tác phong; thực hiện chế độ nền nếp, các quy định trong học tập.', 
+        method: 'Trắc nghiệm', 
+        criteria: 'Các tiêu chí đánh giá ....', 
         clo: 'HP2', 
         weight: '10' 
     },
     { 
         examCode: 'A2.1', 
-        form: 'Quá trình 1', 
+        form: 'Quá trình', 
         time: 'Sau khi kết thúc bài', 
         method: 'Viết', 
         criteria: 'Kiến thức', 
-        clo: 'HP1, HP2', 
-        weight: '20' 
+        clo: 'HP3, HP4', 
+        weight: '30' 
     },
     { 
         examCode: 'A3.1', 
@@ -269,7 +270,7 @@ assessments: [
         method: 'Vấn đáp', 
         criteria: 'Tổng hợp', 
         clo: 'HP1, HP2, HP3, HP4', 
-        weight: '40' 
+        weight: '50' 
     }
   ],
 
@@ -1416,7 +1417,7 @@ sections.push(
                         <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
                             <div className="flex flex-col">
                                 <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2 uppercase tracking-tight">
-                                    {syllabus.info.name || "Soạn thảo đề cương"}
+                                    {syllabus.info.name || "BIÊN SOẠN ĐỀ CƯƠNG HỌC PHẦN"}
                                     {syllabus.info.code && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono uppercase">{syllabus.info.code}</span>}
                                 </h2>
                                 {syllabus.ownerEmail && (
@@ -1449,7 +1450,7 @@ sections.push(
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tight">I. Thông tin chung</h3>
                                         
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                                            <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Công nghệ Ô tô" /></div>
+                                            <div className="space-y-1 col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tên học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg font-bold outline-none bg-slate-50 focus:bg-white transition-all shadow-inner border-slate-200" value={syllabus.info.name} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, name: e.target.value}})} placeholder="Ví dụ: Động cơ đốt trong" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã học phần</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg uppercase font-mono bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.code} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, code: e.target.value}})} placeholder="O7SQ01" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chuyên ngành</label><input disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200" value={syllabus.info.major} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, major: e.target.value}})} placeholder="Kỹ thuật Xe máy quân sự" /></div>
                                             <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loại học phần</label><select disabled={!canEditThis} className="w-full p-2.5 border rounded-lg bg-slate-50 focus:bg-white shadow-inner border-slate-200 outline-none" value={syllabus.info.type} onChange={e => setSyllabus({...syllabus, info: {...syllabus.info, type: e.target.value}})}><option>Bắt buộc</option><option>Tự chọn</option></select></div>
@@ -1466,7 +1467,7 @@ sections.push(
                                             <div className="grid grid-cols-3 gap-8">
                                                 <CreditStepper label="Tín chỉ Lý thuyết" field="theory" value={syllabus.info.credits.theory} />
                                                 <CreditStepper label="Tín chỉ Thực hành" field="practice" value={syllabus.info.credits.practice} />
-                                                <CreditStepper label="Tín chỉ Thực tập" field="internship" value={syllabus.info.credits.internship} />
+                                                <CreditStepper label="Tín chỉ Thực tập/ Đồ án" field="internship" value={syllabus.info.credits.internship} />
                                             </div>
 
                                             <div className="grid grid-cols-4 gap-4 pt-6 border-t border-blue-200">
@@ -1479,7 +1480,7 @@ sections.push(
                                                     <p className="text-xl font-bold text-slate-700">{syllabus.info.hours.theory}</p>
                                                 </div>
                                                 <div className="text-center bg-white rounded-2xl p-4 shadow-sm border border-blue-100 flex flex-col justify-center">
-                                                    <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Tiết TH / TT / TL</p>
+                                                    <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Tiết TH / TT / TL/ ĐA</p>
                                                     <p className="text-xl font-bold text-slate-700">{syllabus.info.hours.practice}</p>
                                                 </div>
                                                 <div className="text-center bg-white rounded-2xl p-4 shadow-sm border border-blue-100 flex flex-col justify-center">
@@ -1589,7 +1590,7 @@ Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việ
                                 {activeTab === 'description' && (
                                     <div className="space-y-4 animate-fade-in">
                                         <h3 className="text-lg font-bold border-b pb-2 uppercase text-slate-800 tracking-tighter">IV. Mô tả học phần</h3>
-                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.description} onChange={e => setSyllabus({...syllabus, description: e.target.value})} placeholder="Tóm tắt nội dung chính..." />
+                                        <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.description} onChange={e => setSyllabus({...syllabus, description: e.target.value})} placeholder="Tóm tắt về học phần/môn học (nêu rõ vị trí của học phần/môn học đối với chương trình đào tạo (CTĐT), mục đích và nội dung chính yếu của học phần)." />
                                     </div>
                                 )}
 
@@ -1922,7 +1923,7 @@ Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việ
                                     className="w-full bg-transparent outline-none focus:ring-1 ring-blue-200 p-1 rounded resize-none min-h-[60px]"
                                     value={row.form}
                                     onChange={e => updateAssessmentRow(index, 'form', e.target.value)}
-                                    placeholder="Ví dụ: Đánh giá thường xuyên 1"
+                                    placeholder="Thường xuyên, quá trình, kết thúc"
                                 />
                             </td>
 
@@ -2022,7 +2023,12 @@ Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việ
                     ))}
                 </tbody>
             </table>
+        
+
         </div>
+                    <p className="text-[14px] leading-relaxed italic text-amber-700">
+            * Đối với mỗi học phần, người học được đánh giá tối thiểu hai điểm thành phần, đối với các học phần có khối lượng nhỏ hơn 02 tín có thể chỉ một điểm đánh giá.
+            </p>
 
         {/* Tổng tỉ lệ */}
         <div className="flex justify-end pr-4">
@@ -2072,8 +2078,8 @@ Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việ
                                             <textarea disabled={!canEditThis} rows="6" className="w-full p-6 border rounded-2xl outline-none text-sm shadow-inner italic bg-slate-50 font-times focus:ring-1 focus:ring-blue-400" value={syllabus.materials?.equipment} onChange={e => setSyllabus({...syllabus, materials: {...syllabus.materials, equipment: e.target.value}})} placeholder="Các trang thiết bị chuyên dụng, phòng thí nghiệm..." />
                                         </section>
                                             <p className="text-[14px] leading-relaxed italic text-amber-700">
-                                            * Các giáo trình, tài liệu tham khảo, các phần mềm, giáo trình điện tử.
-                                            Liệt kê không quá 6 tài liệu.
+                                            * Các giáo trình, tài liệu tham khảo, các phần mềm, giáo trình điện tử. Liệt kê không quá 6 tài liệu. <br/>
+                                            **[...] Tên tác giả (năm xuất bản). Tên giáo trình. Nơi xuất bản: Tên nhà xuất bản.
                                             </p>
 
 

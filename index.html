@@ -447,7 +447,7 @@ assessments: [
                         theory: hTheory,
                         practice: hPractice + hInternship,
                         classroom: hTheory + hPractice + hInternship,
-                        selfStudy: newCredits.total * 30 
+                        selfStudy: newCredits.total * 50 - hTheory- hPractice- hInternship,
                     };
                     
                     return { ...prev, info: { ...prev.info, credits: newCredits, hours: newHours } };

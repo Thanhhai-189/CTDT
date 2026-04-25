@@ -431,8 +431,117 @@ assessments: [
             const isEditor = userRole === 'editor';
             const isOwner = syllabus.ownerUid === user?.uid || syllabus.ownerUid === ''; 
             const canEditThis = isAdmin || (isEditor && isOwner);
+            const deleteSyllabus = async (s) => {
+  if (!user) return alert("Vui lòng đăng nhập");
 
-            const handleCreditChange = (field, value) => {
+  if (!confirm("Xóa học phần này?")) return;
+
+  try {
+    const { doc, deleteDoc } = window.fb;
+
+    await deleteDoc(
+      doc(fbDbRef.current, "users", user.uid, "syllabi", s.id)
+    );
+
+    setSavedSyllabi(prev => prev.filter(x => x.id !== s.id));
+
+  } catch (err) {
+    alert("Lỗi xóa: " + err.message);
+  }
+};
+const canEditItem = (s) => {
+  if (!user) return false;
+
+  const isAdmin = userRole === 'admin';
+  const isEditor = userRole === 'editor';
+  const isOwner = s.ownerUid === user.uid || !s.ownerUid;
+
+  return isAdmin || (isEditor && isOwner);
+};
+
+function calculateSyllabusStats(s) {
+  const structure = normalizeStructure(s?.structure || []);
+
+  let lt = 0;
+  let th = 0;
+  let kt = 0;
+
+  structure.forEach(item => {
+    lt += Number(item.lt) || 0;
+
+    th +=
+      (Number(item.tl) || 0) +
+      (Number(item.thn) || 0) +
+      (Number(item.thd) || 0) +
+      (Number(item.bt) || 0) +
+      (Number(item.extra) || 0);
+
+    kt += Number(item.kt) || 0;
+  });
+
+  return {
+    lt,
+    th,
+    kt,
+    totalHours: lt + th + kt
+  };
+}
+function normalizeStructure(structure = []) {
+  const fields = ['lt','tl','thn','thd','bt','kt','extra'];
+
+  return structure.map((item, idx, arr) => {
+    let hasChild = false;
+
+    for (let i = idx + 1; i < arr.length; i++) {
+      if ((arr[i].level || 0) <= (item.level || 0)) break;
+      if ((arr[i].level || 0) > (item.level || 0)) {
+        hasChild = true;
+        break;
+      }
+    }
+
+    // node cha → reset giờ
+    if (hasChild) {
+      const newItem = { ...item };
+      fields.forEach(f => newItem[f] = 0);
+      return newItem;
+    }
+
+    return item;
+  });
+}
+function calculateGrandTotalBySyllabus(s, type) {
+  const structure = normalizeStructure(s?.structure || []);
+
+  return structure.reduce((sum, item) => {
+    if (type === "lt") return sum + (Number(item.lt) || 0);
+
+    if (type === "th") {
+      return sum +
+        (Number(item.tl) || 0) +
+        (Number(item.thn) || 0) +
+        (Number(item.thd) || 0) +
+        (Number(item.bt) || 0) +
+        (Number(item.extra) || 0);
+    }
+
+    if (type === "kt") return sum + (Number(item.kt) || 0);
+
+    if (type === "total") {
+      return sum +
+        (Number(item.lt) || 0) +
+        (Number(item.tl) || 0) +
+        (Number(item.thn) || 0) +
+        (Number(item.thd) || 0) +
+        (Number(item.bt) || 0) +
+        (Number(item.kt) || 0) +
+        (Number(item.extra) || 0);
+    }
+
+    return sum;
+  }, 0);
+}
+                const handleCreditChange = (field, value) => {
                 const val = Math.max(0, parseFloat(value) || 0);
                 setSyllabus(prev => {
                     const newCredits = { ...prev.info.credits, [field]: val };
@@ -1418,7 +1527,19 @@ sections.push(
                                     </button>
                                 ))}
                             </div>
-                            
+                            <div className="text-xs text-slate-500 mt-4 mb-1 px-2">
+                            QUẢN LÝ
+                            </div>
+
+                            <button
+                            onClick={() => setActiveTab('manage_syllabi')}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition-all
+                                ${activeTab === 'manage_syllabi'
+                                ? 'bg-amber-500 text-white shadow-lg'
+                                : 'bg-slate-800 text-amber-400 hover:bg-slate-700'}
+                            `}
+                            >📚 Quản lý học phần
+                            </button>
                             <div className="pt-4 border-t border-slate-800 space-y-2">
                                 <h3 className="text-[10px] text-slate-500 uppercase font-bold mb-2 px-2 tracking-widest">Danh sách học phần</h3>
                                 {savedSyllabi.map(s => (
@@ -2153,6 +2274,136 @@ Học phần A (Assessment): Học phần cốt lõi (hỗ trợ tối đa việ
                                         <textarea disabled={!canEditThis} rows="15" className="w-full p-6 border rounded-2xl focus:ring-1 focus:ring-blue-400 outline-none text-sm leading-relaxed shadow-inner italic bg-slate-50 font-times" value={syllabus.regulations} onChange={e => setSyllabus({...syllabus, regulations: e.target.value})} placeholder="Các quy định về thi cử, thái độ học tập..." />
                                     </div>
                                 )}
+
+                                {activeTab === 'manage_syllabi' && (
+  <div className="space-y-6 animate-fade-in font-times">
+
+    <h3 className="text-xl font-bold uppercase text-slate-800">
+      QUẢN LÝ HỌC PHẦN
+    </h3>
+
+    <div className="overflow-x-auto border rounded-xl shadow-lg bg-white">
+      <table className="w-full text-[14px] border-collapse">
+
+        {/* HEADER */}
+        <thead className="bg-slate-100 font-bold text-slate-700">
+          <tr>
+            <th className="p-3 border text-center">Mã HP</th>
+            <th className="p-3 border text-center">Tên học phần</th>
+            <th className="p-3 border text-center">Tín chỉ</th>
+            <th className="p-3 border text-center">Số tiết</th>
+            <th className="p-3 border text-center">LT</th>
+            <th className="p-3 border text-center">TH</th>
+            <th className="p-3 border text-center">KT</th>
+            <th className="p-3 border text-center">Bộ môn</th>
+            <th className="p-1 border w-16"></th>
+          </tr>
+        </thead>
+
+  {/* BODY */}
+<tbody>
+  {[...savedSyllabi]
+    .sort((a, b) => (a.id || "").localeCompare(b.id || ""))
+    .map((s, index) => {
+
+      // 👉 fallback an toàn
+      const info = s.info || {};
+
+      // 👉 tính stats chuẩn online
+      const stats = s.stats || calculateSyllabusStats(s);
+
+      return (
+        <tr
+          key={s.id || index}
+          className="group hover:bg-blue-50/30 transition-colors"
+        >
+
+          {/* MÃ HP */}
+          <td className="p-2 border text-center font-bold text-blue-700">
+            {info.code || "---"}
+          </td>
+
+          {/* TÊN + LOẠI */}
+          <td className="p-2 border">
+            <div className="font-semibold text-slate-800 uppercase">
+              {info.name || "Chưa có tên"}
+            </div>
+            <div className="text-xs text-slate-500">
+              {info.type || "-"}
+            </div>
+          </td>
+
+          {/* TÍN CHỈ */}
+          <td className="p-2 border text-center font-bold">
+            {info.credits?.total || 0}
+          </td>
+
+          {/* TỔNG TIẾT */}
+          <td className="p-2 border text-center font-semibold">
+            {stats.totalHours}
+          </td>
+
+          {/* LT */}
+          <td className="p-2 border text-center text-blue-700 font-bold">
+            {stats.lt}
+          </td>
+
+          {/* TH */}
+          <td className="p-2 border text-center text-emerald-700 font-bold">
+            {stats.th}
+          </td>
+
+          {/* KT */}
+          <td className="p-2 border text-center text-amber-700 font-bold">
+            {stats.kt}
+          </td>
+
+          {/* BỘ MÔN */}
+          <td className="p-2 border text-center text-sm text-slate-600">
+            {info.contact || "-"}
+          </td>
+
+
+                {/* ACTION */}
+                <td className="p-1 border text-center align-middle">
+                  <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+
+                    <button
+  onClick={() => setSyllabus(s)}
+  className="text-blue-500 hover:text-blue-700"
+  title="Xem / chỉnh sửa"
+>
+  <Icons.Eye />
+</button>
+
+{canEditItem(s) && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      deleteSyllabus(s);
+    }}
+    className="text-slate-300 hover:text-red-500"
+    title="Xóa"
+  >
+    <Icons.Trash />
+  </button>
+)}
+                 
+
+                  </div>
+                </td>
+
+              </tr>
+            );
+          })}
+        </tbody>
+
+      </table>
+    </div>
+
+  </div>
+)}
+
 
                                 <div className="mt-10 text-[10px] text-slate-400 italic text-center border-t border-slate-100 pt-6 uppercase tracking-[0.2em]">CTĐT - SQKT 2026</div>
                             </div>

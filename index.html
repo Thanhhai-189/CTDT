@@ -1367,7 +1367,7 @@ sections.push(
     });
 
     Packer.toBlob(docObj).then(blob => {
-        saveAs(blob, `De_cuong_HP_${syllabus.info.code || 'Export'}.docx`);
+        saveAs(blob, `${syllabus.info.code || 'Export'}.docx`);
     });
 };
 
